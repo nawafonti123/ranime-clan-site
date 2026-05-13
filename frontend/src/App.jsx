@@ -295,8 +295,8 @@ function Videos() {
   const [selectedVideo, setSelectedVideo] = useState(null);
 
   const videos = [
-    { title: "مونتاج الكلان", src: clanVideo1, label: "VIDEO 1" },
-    { title: "لقطات سكريم", src: clanVideo2, label: "VIDEO 2" },
+    { title: "أداء الأعضاء", src: clanVideo1, label: "VIDEO 1" },
+    { title: "أداء الأعضاء", src: clanVideo2, label: "VIDEO 2" },
     { title: "أداء الأعضاء", src: clanVideo3, label: "VIDEO 3" },
   ];
 
@@ -433,7 +433,7 @@ function Videos() {
                     fontSize: 15,
                   }}
                 >
-                  فيديو رسمي ثابت داخل ملفات المشروع ويتم رفعه تلقائياً مع GitHub.
+                  فيديو يوضح اداء اعضاء الكلان بشكل دقيق 
                 </p>
               </div>
             </div>
