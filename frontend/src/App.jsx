@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import "./style.css";
 
-const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const API = import.meta.env.VITE_API_URL || "https://ranime-clan-site.onrender.com";
 
 function go(path) {
   window.history.pushState({}, "", path);
