@@ -292,6 +292,8 @@ function Identity() {
 }
 
 function Videos() {
+  const [selectedVideo, setSelectedVideo] = useState(null);
+
   const videos = [
     { title: "مونتاج الكلان", src: clanVideo1, label: "VIDEO 1" },
     { title: "لقطات سكريم", src: clanVideo2, label: "VIDEO 2" },
@@ -299,33 +301,209 @@ function Videos() {
   ];
 
   return (
-    <section className="section" id="videos">
-      <div className="sectionHead">
-        <span>CLAN MEDIA</span>
-        <h2>فيديوهات الكلان</h2>
-        <p>
-          قسم خاص لعرض أقوى لقطات RNM، البطولات، السكريمات، والمونتاجات.
-        </p>
-      </div>
+    <>
+      <section className="section" id="videos">
+        <div className="sectionHead">
+          <span>CLAN MEDIA</span>
+          <h2>فيديوهات الكلان</h2>
+          <p>
+            أقوى لقطات RNM بجودة احترافية وتجربة مشاهدة سينمائية.
+          </p>
+        </div>
 
-      <div className="videoGrid">
-        {videos.map((item) => (
-          <div className="videoBox" key={item.title}>
-            <div className="videoMock realVideoBox">
-              <video
-                controls
-                preload="metadata"
-                src={item.src}
-                className="clanVideo"
-              />
-              <span className="videoTag">{item.label}</span>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+            gap: "30px",
+            width: "100%",
+          }}
+        >
+          {videos.map((item, index) => (
+            <div
+              key={index}
+              style={{
+                position: "relative",
+                borderRadius: "28px",
+                overflow: "hidden",
+                border: "1px solid rgba(255,0,0,0.25)",
+                background: "rgba(15,15,15,0.95)",
+                boxShadow: "0 0 40px rgba(255,0,0,0.18)",
+                transition: "0.35s",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-8px) scale(1.02)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 60px rgba(255,0,0,0.35)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0px) scale(1)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 40px rgba(255,0,0,0.18)";
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  aspectRatio: "9/16",
+                  background: "#000",
+                  overflow: "hidden",
+                }}
+              >
+                <video
+                  src={item.src}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+
+                <div
+                  onClick={() => setSelectedVideo(item)}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0.15))",
+                    transition: "0.3s",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 90,
+                      height: 90,
+                      borderRadius: "50%",
+                      background: "rgba(255,0,0,0.18)",
+                      border: "2px solid rgba(255,255,255,0.25)",
+                      backdropFilter: "blur(10px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 0 35px rgba(255,0,0,0.4)",
+                    }}
+                  >
+                    <Video size={42} color="#fff" />
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 18,
+                    right: 18,
+                    background: "rgba(255,0,0,0.16)",
+                    color: "#fff",
+                    padding: "8px 14px",
+                    borderRadius: "999px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    backdropFilter: "blur(10px)",
+                    border: "1px solid rgba(255,0,0,0.25)",
+                  }}
+                >
+                  {item.label}
+                </div>
+              </div>
+
+              <div style={{ padding: 24 }}>
+                <h3
+                  style={{
+                    color: "#fff",
+                    fontSize: 24,
+                    marginBottom: 12,
+                    fontWeight: 800,
+                  }}
+                >
+                  {item.title}
+                </h3>
+
+                <p
+                  style={{
+                    color: "rgba(255,255,255,0.72)",
+                    lineHeight: 1.8,
+                    fontSize: 15,
+                  }}
+                >
+                  فيديو رسمي ثابت داخل ملفات المشروع ويتم رفعه تلقائياً مع GitHub.
+                </p>
+              </div>
             </div>
-            <h3>{item.title}</h3>
-            <p>فيديو رسمي ثابت داخل ملفات الموقع ويتم رفعه مع GitHub مباشرة.</p>
+          ))}
+        </div>
+      </section>
+
+      {selectedVideo && (
+        <div
+          onClick={() => setSelectedVideo(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            background: "rgba(0,0,0,0.92)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 1400,
+              borderRadius: 30,
+              overflow: "hidden",
+              position: "relative",
+              border: "1px solid rgba(255,0,0,0.25)",
+              boxShadow: "0 0 80px rgba(255,0,0,0.25)",
+              background: "#000",
+            }}
+          >
+            <button
+              onClick={() => setSelectedVideo(null)}
+              style={{
+                position: "absolute",
+                top: 18,
+                left: 18,
+                zIndex: 10,
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                border: "none",
+                background: "rgba(255,0,0,0.22)",
+                color: "#fff",
+                fontSize: 22,
+                cursor: "pointer",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              ✕
+            </button>
+
+            <video
+              src={selectedVideo.src}
+              controls
+              autoPlay
+              style={{
+                width: "100%",
+                maxHeight: "90vh",
+                background: "#000",
+              }}
+            />
           </div>
-        ))}
-      </div>
-    </section>
+        </div>
+      )}
+    </>
   );
 }
 
