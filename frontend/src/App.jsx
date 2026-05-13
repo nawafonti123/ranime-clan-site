@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import "./style.css";
 
-const API = "http://127.0.0.1:8000";
+const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 function go(path) {
   window.history.pushState({}, "", path);
@@ -521,7 +521,7 @@ function Admin() {
 
               <p className="desc">{a.description || "لا يوجد وصف"}</p>
 
-              <video controls src={`${API}${a.video_url}`} />
+              <video controls src={a.video_url?.startsWith("http") ? a.video_url : `${API}${a.video_url}`} />
             </div>
           ))}
 

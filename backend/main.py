@@ -1,10 +1,7 @@
-from fastapi import FastAPI, UploadFile, File, Form, Depends
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from supabase import create_client, Client
 from datetime import datetime
-import shutil
 import os
 import uuid
 
@@ -18,44 +15,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "application-videos")
 
-DATABASE_URL = "sqlite:///./ranime.db"
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(bind=engine)
+supabase: Client | None = None
+if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-Base = declarative_base()
 
-class Application(Base):
-    __tablename__ = "applications"
+def get_supabase() -> Client:
+    if supabase is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase env vars are missing: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY",
+        )
+    return supabase
 
-    id = Column(Integer, primary_key=True, index=True)
-    player_name = Column(String(120), nullable=False)
-    pubg_id = Column(String(80), nullable=False)
-    discord = Column(String(120), nullable=True)
-    device = Column(String(80), nullable=True)
-    fps = Column(String(50), nullable=True)
-    role = Column(String(80), nullable=True)
-    description = Column(Text, nullable=True)
-    video_url = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-Base.metadata.create_all(bind=engine)
-
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
-
-def db_session():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @app.get("/")
 def root():
-    return {"message": "RANIME Gaming Backend Running"}
+    return {"message": "RANIME Gaming Backend Running With Supabase"}
+
 
 @app.post("/api/apply")
 async def apply_to_clan(
@@ -67,58 +48,70 @@ async def apply_to_clan(
     role: str = Form(""),
     description: str = Form(""),
     video: UploadFile = File(...),
-    db: Session = Depends(db_session)
 ):
-    allowed = ["video/mp4", "video/webm", "video/quicktime", "video/x-matroska"]
+    sb = get_supabase()
+
+    allowed = {
+        "video/mp4",
+        "video/webm",
+        "video/quicktime",
+        "video/x-matroska",
+    }
+
     if video.content_type not in allowed:
         return {"success": False, "message": "نوع الفيديو غير مدعوم"}
 
-    ext = os.path.splitext(video.filename)[1]
+    ext = os.path.splitext(video.filename or "video.mp4")[1] or ".mp4"
     filename = f"{uuid.uuid4().hex}{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
+    storage_path = f"applications/{filename}"
 
-    with open(filepath, "wb") as buffer:
-        shutil.copyfileobj(video.file, buffer)
+    content = await video.read()
 
-    app_record = Application(
-        player_name=player_name,
-        pubg_id=pubg_id,
-        discord=discord,
-        device=device,
-        fps=fps,
-        role=role,
-        description=description,
-        video_url=f"/uploads/{filename}"
-    )
+    try:
+        sb.storage.from_(SUPABASE_BUCKET).upload(
+            path=storage_path,
+            file=content,
+            file_options={
+                "content-type": video.content_type or "video/mp4",
+                "upsert": "false",
+            },
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Storage upload failed: {e}")
 
-    db.add(app_record)
-    db.commit()
-    db.refresh(app_record)
+    public_url = sb.storage.from_(SUPABASE_BUCKET).get_public_url(storage_path)
+
+    row = {
+        "player_name": player_name,
+        "pubg_id": pubg_id,
+        "discord": discord,
+        "device": device,
+        "fps": fps,
+        "role": role,
+        "description": description,
+        "video_url": public_url,
+        "created_at": datetime.utcnow().isoformat(),
+    }
+
+    try:
+        result = sb.table("applications").insert(row).execute()
+        inserted = result.data[0] if result.data else row
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database insert failed: {e}")
 
     return {
         "success": True,
         "message": "تم رفع طلبك بنجاح، سيتم مراجعته من الإدارة.",
-        "application_id": app_record.id
+        "application_id": inserted.get("id"),
     }
 
+
 @app.get("/api/applications")
-def get_applications(db: Session = Depends(db_session)):
-    items = db.query(Application).order_by(Application.id.desc()).all()
-    return [
-        {
-            "id": x.id,
-            "player_name": x.player_name,
-            "pubg_id": x.pubg_id,
-            "discord": x.discord,
-            "device": x.device,
-            "fps": x.fps,
-            "role": x.role,
-            "description": x.description,
-            "video_url": x.video_url,
-            "created_at": x.created_at.isoformat()
-        }
-        for x in items
-    ]
+def get_applications():
+    sb = get_supabase()
+    result = sb.table("applications").select("*").order("id", desc=True).execute()
+    return result.data or []
+
 
 if __name__ == "__main__":
     import uvicorn
