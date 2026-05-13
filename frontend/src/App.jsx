@@ -27,6 +27,7 @@ import "./style.css";
 import clanVideo1 from "./VID-1.mp4";
 import clanVideo2 from "./VID-2.mp4";
 import clanVideo3 from "./VID-3.mp4";
+import logo from "./RNM.png";
 
 const API = import.meta.env.VITE_API_URL || "https://ranime-clan-site.onrender.com";
 
@@ -45,6 +46,88 @@ function useRoute() {
   }, []);
 
   return path;
+}
+
+
+function BrandAssets() {
+  useEffect(() => {
+    let favicon = document.querySelector('link[rel="icon"]');
+    if (!favicon) {
+      favicon = document.createElement("link");
+      favicon.rel = "icon";
+      document.head.appendChild(favicon);
+    }
+    favicon.type = "image/png";
+    favicon.href = logo;
+
+    let appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+    if (!appleIcon) {
+      appleIcon = document.createElement("link");
+      appleIcon.rel = "apple-touch-icon";
+      document.head.appendChild(appleIcon);
+    }
+    appleIcon.href = logo;
+  }, []);
+
+  return (
+    <style>{`
+      @keyframes floatLogo {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-12px) scale(1.03); }
+      }
+
+      .rnmLogoImg {
+        display: block;
+        object-fit: contain;
+        user-select: none;
+        pointer-events: none;
+      }
+
+      .brandLogoNav {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid rgba(255, 0, 0, 0.35);
+        box-shadow: 0 0 25px rgba(255, 0, 0, 0.45), inset 0 0 18px rgba(255, 0, 0, 0.2);
+        background: #050505;
+      }
+
+      .brandTextStack {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        line-height: 1;
+      }
+
+      .heroLogoMain {
+        width: min(520px, 92vw);
+        max-height: 560px;
+        filter: drop-shadow(0 0 35px rgba(255, 0, 0, 0.6));
+        animation: floatLogo 4s ease-in-out infinite;
+      }
+
+      .adminLoginLogoImg {
+        width: 130px;
+        height: 130px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 30px rgba(255, 0, 0, 0.55));
+      }
+
+      .adminSideLogoImg {
+        width: 96px;
+        height: 96px;
+        object-fit: contain;
+        margin-bottom: 12px;
+        filter: drop-shadow(0 0 24px rgba(255, 0, 0, 0.5));
+      }
+
+      @media (max-width: 700px) {
+        .brandLogoNav { width: 46px; height: 46px; }
+        .heroLogoMain { width: min(360px, 88vw); }
+      }
+    `}</style>
+  );
 }
 
 function Home() {
@@ -107,6 +190,7 @@ function Home() {
 
   return (
     <>
+      <BrandAssets />
       <Navbar />
       <Hero />
       <ClanInfo />
@@ -139,9 +223,11 @@ function Navbar() {
   return (
     <nav className="nav">
       <button className="brand" onClick={() => go("/")}>
-        <span className="brandWolf">♛</span>
-        <span>RNM</span>
-        <small>ESPORTS</small>
+        <img className="brandLogoNav" src={logo} alt="RNM ESPORTS" />
+        <span className="brandTextStack">
+          <span>RNM</span>
+          <small>ESPORTS</small>
+        </span>
       </button>
 
       <div className={`navLinks ${open ? "show" : ""}`}>
@@ -205,9 +291,7 @@ function Hero() {
 
       <div className="heroEmblem">
         <div className="emblemRing">
-          <Crown />
-          <h2>RNM</h2>
-          <p>ONE CLAN</p>
+          <img className="rnmLogoImg heroLogoMain" src={logo} alt="RNM ESPORTS" />
         </div>
       </div>
     </section>
@@ -645,10 +729,12 @@ function Admin() {
 
   if (!allowed) {
     return (
+      <>
+      <BrandAssets />
       <main className="adminPage">
         <div className="adminLogin">
           <div className="adminLogo">
-            <Lock />
+            <img className="rnmLogoImg adminLoginLogoImg" src={logo} alt="RNM ADMIN" />
           </div>
           <h1>لوحة إدارة RNM</h1>
           <p>الدخول مخصص للإدارة فقط لمراجعة طلبات الانضمام.</p>
@@ -675,14 +761,17 @@ function Admin() {
           </button>
         </div>
       </main>
+      </>
     );
   }
 
   return (
+    <>
+    <BrandAssets />
     <main className="adminDashboard">
       <aside className="adminSide">
         <div className="sideBrand">
-          <Crown />
+          <img className="rnmLogoImg adminSideLogoImg" src={logo} alt="RNM ADMIN" />
           <h2>RNM</h2>
           <span>ADMIN PANEL</span>
         </div>
@@ -769,6 +858,7 @@ function Admin() {
         </div>
       </section>
     </main>
+    </>
   );
 }
 
