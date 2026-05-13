@@ -320,7 +320,7 @@ function Hero() {
       <div className="heroContent">
         <div className="heroBadge">
           <Crown size={22} />
-          RANIME GAMING OFFICIAL
+          RANIME GAMING ESPORTS
         </div>
 
         <h1>
