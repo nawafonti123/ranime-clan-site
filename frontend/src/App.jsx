@@ -107,6 +107,66 @@ function BrandAssets() {
         animation: floatLogo 4s ease-in-out infinite;
       }
 
+
+      .heroArt {
+        position: relative;
+        min-height: 520px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        isolation: isolate;
+      }
+
+      .heroArt::before {
+        content: "";
+        position: absolute;
+        width: min(520px, 78vw);
+        height: min(520px, 78vw);
+        border-radius: 50%;
+        border: 1px solid rgba(255, 0, 0, 0.22);
+        background:
+          radial-gradient(circle, rgba(255,0,0,0.32), transparent 58%),
+          linear-gradient(135deg, rgba(255,0,0,0.16), rgba(0,0,0,0.08));
+        box-shadow: 0 0 90px rgba(255,0,0,0.24), inset 0 0 75px rgba(255,0,0,0.16);
+        animation: floatLogo 4s ease-in-out infinite;
+        z-index: -1;
+      }
+
+      .heroOrb {
+        width: 190px;
+        height: 190px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: #ff1515;
+        border: 1px solid rgba(255,0,0,0.4);
+        background: rgba(5,0,0,0.72);
+        box-shadow: 0 0 60px rgba(255,0,0,0.32), inset 0 0 38px rgba(255,0,0,0.18);
+        backdrop-filter: blur(10px);
+      }
+
+      .heroBlade {
+        position: absolute;
+        width: 360px;
+        height: 4px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, transparent, rgba(255,0,0,0.95), transparent);
+        box-shadow: 0 0 28px rgba(255,0,0,0.75);
+      }
+
+      .bladeOne { transform: rotate(35deg); }
+      .bladeTwo { transform: rotate(-35deg); }
+
+      .footerLogoImg {
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        object-fit: cover;
+        border: 1px solid rgba(255,0,0,0.4);
+        box-shadow: 0 0 28px rgba(255,0,0,0.45);
+        background: #050505;
+      }
+
       .adminLoginLogoImg {
         width: 130px;
         height: 130px;
@@ -124,7 +184,10 @@ function BrandAssets() {
 
       @media (max-width: 700px) {
         .brandLogoNav { width: 46px; height: 46px; }
-        .heroLogoMain { width: min(360px, 88vw); }
+        .heroArt { min-height: 360px; }
+        .heroOrb { width: 150px; height: 150px; }
+        .heroBlade { width: 260px; }
+        .footerLogoImg { width: 46px; height: 46px; border-radius: 14px; }
       }
     `}</style>
   );
@@ -289,9 +352,11 @@ function Hero() {
         </div>
       </div>
 
-      <div className="heroEmblem">
-        <div className="emblemRing">
-          <img className="rnmLogoImg heroLogoMain" src={logo} alt="RNM ESPORTS" />
+      <div className="heroArt" aria-hidden="true">
+        <div className="heroBlade bladeOne" />
+        <div className="heroBlade bladeTwo" />
+        <div className="heroOrb">
+          <Crown size={92} />
         </div>
       </div>
     </section>
@@ -871,7 +936,7 @@ function Footer() {
         <span>ONE CLAN</span>
         <b>RNM</b>
         <span>ONE HEART</span>
-        <b className="footerCrown">♛</b>
+        <img className="footerLogoImg" src={logo} alt="RNM ESPORTS" />
         <span>ONE LEGACY</span>
       </div>
 
