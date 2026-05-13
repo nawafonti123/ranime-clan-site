@@ -634,20 +634,92 @@ textarea:focus {
   padding: 14px;
 }
 
-footer {
+footer,
+.siteFooter {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 48px 20px 42px;
+  color: #999;
+  border-top: 1px solid rgba(255, 0, 0, 0.22);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 0, 0, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(12, 0, 0, 0.4), rgba(0, 0, 0, 0.86));
+}
+
+.footerGlow {
+  position: absolute;
+  top: -120px;
+  width: min(700px, 85vw);
+  height: 210px;
+  border-radius: 50%;
+  background: rgba(255, 0, 0, 0.22);
+  filter: blur(70px);
+  pointer-events: none;
+}
+
+.footerMotto {
+  position: relative;
+  z-index: 1;
   display: flex;
   gap: 28px;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  padding: 38px 20px;
-  color: #999;
-  border-top: 1px solid rgba(255, 0, 0, 0.22);
   letter-spacing: 5px;
+  font-weight: 700;
 }
 
-footer b {
+.footerMotto b,
+.footerCredit b,
+.footerCredit strong {
   color: #ff2525;
+}
+
+.footerCrown {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 0, 0, 0.45);
+  background: rgba(255, 0, 0, 0.09);
+  box-shadow: 0 0 25px rgba(255, 0, 0, 0.25);
+  font-size: 24px;
+}
+
+.footerCredit {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.footerCredit b {
+  font-size: 22px;
+  text-shadow: 0 0 18px rgba(255, 0, 0, 0.75);
+  animation: heartBeat 1.35s infinite ease-in-out;
+}
+
+.footerCredit strong {
+  letter-spacing: 2px;
+  text-shadow: 0 0 18px rgba(255, 0, 0, 0.45);
+}
+
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.22); }
 }
 
 /* ADMIN */
@@ -1020,7 +1092,14 @@ footer b {
     font-size: 42px;
   }
 
-  footer {
+  .footerMotto {
+    gap: 14px;
     letter-spacing: 2px;
+    font-size: 13px;
+  }
+
+  .footerCredit {
+    font-size: 13px;
+    text-align: center;
   }
 }

@@ -774,12 +774,23 @@ function Admin() {
 
 function Footer() {
   return (
-    <footer>
-      <span>ONE CLAN</span>
-      <b>RNM</b>
-      <span>ONE HEART</span>
-      <b>♛</b>
-      <span>ONE LEGACY</span>
+    <footer className="siteFooter">
+      <div className="footerGlow" />
+
+      <div className="footerMotto">
+        <span>ONE CLAN</span>
+        <b>RNM</b>
+        <span>ONE HEART</span>
+        <b className="footerCrown">♛</b>
+        <span>ONE LEGACY</span>
+      </div>
+
+      <div className="footerCredit">
+        <span>الموقع صنع بحب</span>
+        <b>♥</b>
+        <span>من</span>
+        <strong>TEAM HAWK PROGRAMING</strong>
+      </div>
     </footer>
   );
 }
