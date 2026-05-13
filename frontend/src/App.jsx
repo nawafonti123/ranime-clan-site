@@ -185,7 +185,9 @@ function BrandAssets() {
       @media (max-width: 700px) {
         .brandLogoNav { width: 46px; height: 46px; }
         .heroArt { min-height: 360px; }
-        .heroOrb { width: 150px; height: 150px; }
+        .heroOrb { width: 170px; height: 170px; }
+        .rnmHeroLetters span { letter-spacing: -6px; }
+        .rnmHeroSlash { width: 200px; }
         .heroBlade { width: 260px; }
         .footerLogoImg { width: 46px; height: 46px; border-radius: 14px; }
       }
@@ -356,7 +358,12 @@ function Hero() {
         <div className="heroBlade bladeOne" />
         <div className="heroBlade bladeTwo" />
         <div className="heroOrb">
-          <Crown size={92} />
+          <div className="rnmHeroSlash" />
+          <div className="rnmHeroLetters" aria-label="RNM">
+            <span>R</span>
+            <span>N</span>
+            <span>M</span>
+          </div>
         </div>
       </div>
     </section>
