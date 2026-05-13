@@ -24,6 +24,9 @@ import {
   Trash2,
 } from "lucide-react";
 import "./style.css";
+import clanVideo1 from "./VID-1.mp4";
+import clanVideo2 from "./VID-2.mp4";
+import clanVideo3 from "./VID-3.mp4";
 
 const API = import.meta.env.VITE_API_URL || "https://ranime-clan-site.onrender.com";
 
@@ -290,9 +293,9 @@ function Identity() {
 
 function Videos() {
   const videos = [
-    "مونتاج الكلان",
-    "لقطات سكريم",
-    "أداء الأعضاء",
+    { title: "مونتاج الكلان", src: clanVideo1, label: "VIDEO 1" },
+    { title: "لقطات سكريم", src: clanVideo2, label: "VIDEO 2" },
+    { title: "أداء الأعضاء", src: clanVideo3, label: "VIDEO 3" },
   ];
 
   return (
@@ -306,14 +309,19 @@ function Videos() {
       </div>
 
       <div className="videoGrid">
-        {videos.map((title, i) => (
-          <div className="videoBox" key={title}>
-            <div className="videoMock">
-              <Video />
-              <span>VIDEO {i + 1}</span>
+        {videos.map((item) => (
+          <div className="videoBox" key={item.title}>
+            <div className="videoMock realVideoBox">
+              <video
+                controls
+                preload="metadata"
+                src={item.src}
+                className="clanVideo"
+              />
+              <span className="videoTag">{item.label}</span>
             </div>
-            <h3>{title}</h3>
-            <p>يمكنك لاحقاً استبداله بفيديو حقيقي أو رابط YouTube.</p>
+            <h3>{item.title}</h3>
+            <p>فيديو رسمي ثابت داخل ملفات الموقع ويتم رفعه مع GitHub مباشرة.</p>
           </div>
         ))}
       </div>
