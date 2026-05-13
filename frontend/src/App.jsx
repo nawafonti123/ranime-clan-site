@@ -21,6 +21,7 @@ import {
   Monitor,
   IdCard,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 import "./style.css";
 
@@ -408,6 +409,7 @@ function Admin() {
   const [password, setPassword] = useState("");
   const [allowed, setAllowed] = useState(false);
   const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     if (allowed) loadApps();
@@ -417,6 +419,32 @@ function Admin() {
     const res = await fetch(`${API}/api/applications`);
     const json = await res.json();
     setApps(json);
+  }
+
+  async function deleteApplication(id, playerName) {
+    const ok = window.confirm(`هل تريد حذف طلب ${playerName || "هذا اللاعب"} نهائياً؟`);
+    if (!ok) return;
+
+    setDeletingId(id);
+
+    try {
+      const res = await fetch(`${API}/api/applications/${id}`, {
+        method: "DELETE",
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل حذف الطلب");
+        return;
+      }
+
+      setApps((prev) => prev.filter((item) => item.id !== id));
+    } catch {
+      alert("حدث خطأ أثناء حذف الطلب");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   const filtered = useMemo(() => {
@@ -507,7 +535,29 @@ function Admin() {
                   <h3>{a.player_name}</h3>
                   <span>Application #{a.id}</span>
                 </div>
-                <Trophy />
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => deleteApplication(a.id, a.player_name)}
+                    disabled={deletingId === a.id}
+                    title="حذف الطلب"
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 14,
+                      border: "1px solid rgba(255, 0, 0, 0.55)",
+                      background: "rgba(255, 0, 0, 0.12)",
+                      color: "#ff2a2a",
+                      display: "grid",
+                      placeItems: "center",
+                      cursor: deletingId === a.id ? "not-allowed" : "pointer",
+                      opacity: deletingId === a.id ? 0.55 : 1,
+                    }}
+                  >
+                    <Trash2 size={19} />
+                  </button>
+                  <Trophy />
+                </div>
               </div>
 
               <div className="infoGrid">

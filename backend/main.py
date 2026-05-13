@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from datetime import datetime
+from urllib.parse import urlparse, unquote
 import os
 import uuid
 
@@ -31,6 +32,22 @@ def get_supabase() -> Client:
             detail="Supabase env vars are missing: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY",
         )
     return supabase
+
+
+def storage_path_from_public_url(video_url: str | None) -> str | None:
+    """Extract applications/file.mp4 from a Supabase public storage URL."""
+    if not video_url:
+        return None
+
+    try:
+        parsed = urlparse(video_url)
+        marker = f"/storage/v1/object/public/{SUPABASE_BUCKET}/"
+        if marker not in parsed.path:
+            return None
+        path = parsed.path.split(marker, 1)[1]
+        return unquote(path) if path else None
+    except Exception:
+        return None
 
 
 @app.get("/")
@@ -111,6 +128,42 @@ def get_applications():
     sb = get_supabase()
     result = sb.table("applications").select("*").order("id", desc=True).execute()
     return result.data or []
+
+
+@app.delete("/api/applications/{application_id}")
+def delete_application(application_id: int):
+    sb = get_supabase()
+
+    try:
+        found = (
+            sb.table("applications")
+            .select("id, video_url")
+            .eq("id", application_id)
+            .limit(1)
+            .execute()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database read failed: {e}")
+
+    if not found.data:
+        raise HTTPException(status_code=404, detail="طلب التقديم غير موجود")
+
+    video_url = found.data[0].get("video_url")
+    storage_path = storage_path_from_public_url(video_url)
+
+    if storage_path:
+        try:
+            sb.storage.from_(SUPABASE_BUCKET).remove([storage_path])
+        except Exception:
+            # لا نوقف حذف الطلب إذا فشل حذف الفيديو من التخزين
+            pass
+
+    try:
+        sb.table("applications").delete().eq("id", application_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database delete failed: {e}")
+
+    return {"success": True, "message": "تم حذف طلب التقديم بنجاح"}
 
 
 if __name__ == "__main__":
