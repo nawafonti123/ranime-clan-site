@@ -139,8 +139,8 @@ function Navbar() {
   return (
     <nav className="nav">
       <button className="brand" onClick={() => go("/")}>
-        <span className="brandMark"><Crown size={20} /></span>
-        <span className="brandText">RNM</span>
+        <span className="brandWolf">♛</span>
+        <span>RNM</span>
         <small>ESPORTS</small>
       </button>
 
@@ -163,10 +163,10 @@ function Hero() {
   return (
     <section className="hero" id="top">
       <div className="heroGrid" />
-      <div className="orb orbOne" />
-      <div className="orb orbTwo" />
+      <div className="redSmoke one" />
+      <div className="redSmoke two" />
 
-      <div className="heroContent revealCard">
+      <div className="heroContent">
         <div className="heroBadge">
           <Crown size={22} />
           RANIME GAMING OFFICIAL
@@ -178,30 +178,37 @@ function Hero() {
         </h1>
 
         <p>
-          لسنا مجرد فريق، نحن عائلة تصنع الهيبة داخل ساحة PUBG. قوة، ولاء، احترام، وتنظيم تحت راية واحدة.
+          لسنا مجرد فريق، نحن عائلة تصنع الهيبة داخل ساحة PUBG.  
+          قوة، ولاء، احترام، وتنظيم تحت راية واحدة.
         </p>
 
         <div className="heroStats">
-          <div><strong>60+</strong><span>عضو</span></div>
-          <div><strong>RNM</strong><span>هوية</span></div>
-          <div><strong>ELITE</strong><span>Clan</span></div>
+          <div>
+            <strong>60+</strong>
+            <span>عضو</span>
+          </div>
+          <div>
+            <strong>RNM</strong>
+            <span>هوية</span>
+          </div>
+          <div>
+            <strong>ONE</strong>
+            <span>HEART</span>
+          </div>
         </div>
 
         <div className="heroBtns">
           <a href="#apply" className="mainBtn">قدّم للكلان</a>
-          <a href="#videos" className="ghostBtn">شاهد الفيديوهات</a>
+          <a href="#videos" className="ghostBtn">شاهد قوتنا</a>
         </div>
       </div>
 
-      <div className="heroVisual">
+      <div className="heroEmblem">
         <div className="emblemRing">
-          <div className="emblemGlow" />
           <Crown />
           <h2>RNM</h2>
-          <p>ONE CLAN • ONE HEART</p>
+          <p>ONE CLAN</p>
         </div>
-        <div className="floatingPanel fpOne"><Gamepad2 /> PUBG MOBILE</div>
-        <div className="floatingPanel fpTwo"><Trophy /> ELITE TEAM</div>
       </div>
     </section>
   );
@@ -209,9 +216,21 @@ function Hero() {
 
 function ClanInfo() {
   const cards = [
-    { icon: <Users />, title: "عائلة واحدة", text: "كل عضو داخل RNM جزء من كيان واحد، ننتصر معاً ونتطور معاً." },
-    { icon: <Shield />, title: "تنظيم وهيبة", text: "نظام واضح، إدارة قوية، واحترام يجعل اسم الكلان ثابتاً بين الجميع." },
-    { icon: <Sword />, title: "قوة داخل اللعب", text: "نبحث عن لاعبين يملكون أداء، ذكاء، هدوء، وروح فريق." },
+    {
+      icon: <Users />,
+      title: "عائلة واحدة",
+      text: "كل عضو داخل RNM جزء من كيان واحد، ننتصر معاً ونتطور معاً.",
+    },
+    {
+      icon: <Shield />,
+      title: "تنظيم وهيبة",
+      text: "نظام واضح، إدارة قوية، واحترام يجعل اسم الكلان ثابتاً بين الجميع.",
+    },
+    {
+      icon: <Sword />,
+      title: "قوة داخل اللعب",
+      text: "نبحث عن لاعبين يملكون أداء، ذكاء، هدوء، وروح فريق.",
+    },
   ];
 
   return (
@@ -219,7 +238,10 @@ function ClanInfo() {
       <div className="sectionHead">
         <span>CLAN PERSONALITY</span>
         <h2>شخصية الكلان</h2>
-        <p>RNM كيان يمتلك حضوراً وهيبة، يجمع بين القوة، القيادة، الانضباط، وروح الفريق.</p>
+        <p>
+          RNM ليس مجرد كلان قتالي، بل كيان يمتلك حضوراً وهيبة.  
+          يجمع بين القوة، الهدوء، القيادة، والتنظيم.
+        </p>
       </div>
 
       <div className="cards">
@@ -247,10 +269,12 @@ function Identity() {
   return (
     <section className="identity">
       <div className="identityPanel">
-        <div className="identityText">
+        <div>
           <Flame className="bigIcon" />
-          <h2>هوية RNM</h2>
-          <p>اسم يصنع بالولاء والقوة، وفريق يدخل الساحة بثقة وهيبة.</p>
+          <h2>الشعار الرسمي</h2>
+          <p>
+            لسنا مجرد فريق… نحن اسم يصنع بالولاء والقوة.
+          </p>
         </div>
 
         <div className="valuesGrid">
@@ -282,33 +306,200 @@ function Videos() {
         <div className="sectionHead">
           <span>CLAN MEDIA</span>
           <h2>فيديوهات الكلان</h2>
-          <p>أقوى لقطات RNM بجودة احترافية وتجربة مشاهدة سينمائية.</p>
+          <p>
+            أقوى لقطات RNM بجودة احترافية وتجربة مشاهدة سينمائية.
+          </p>
         </div>
 
-        <div className="videoGrid proVideos">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+            gap: "30px",
+            width: "100%",
+          }}
+        >
           {videos.map((item, index) => (
-            <article className="videoCard" key={index} onClick={() => setSelectedVideo(item)}>
-              <div className="videoFrame">
-                <video src={item.src} muted playsInline preload="metadata" />
-                <div className="videoOverlay">
-                  <div className="playButton"><Video size={38} /></div>
+            <div
+              key={index}
+              style={{
+                position: "relative",
+                borderRadius: "28px",
+                overflow: "hidden",
+                border: "1px solid rgba(255,0,0,0.25)",
+                background: "rgba(15,15,15,0.95)",
+                boxShadow: "0 0 40px rgba(255,0,0,0.18)",
+                transition: "0.35s",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-8px) scale(1.02)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 60px rgba(255,0,0,0.35)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0px) scale(1)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 40px rgba(255,0,0,0.18)";
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  aspectRatio: "9/16",
+                  background: "#000",
+                  overflow: "hidden",
+                }}
+              >
+                <video
+                  src={item.src}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+
+                <div
+                  onClick={() => setSelectedVideo(item)}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0.15))",
+                    transition: "0.3s",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 90,
+                      height: 90,
+                      borderRadius: "50%",
+                      background: "rgba(255,0,0,0.18)",
+                      border: "2px solid rgba(255,255,255,0.25)",
+                      backdropFilter: "blur(10px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 0 35px rgba(255,0,0,0.4)",
+                    }}
+                  >
+                    <Video size={42} color="#fff" />
+                  </div>
                 </div>
-                <span className="videoTag">{item.label}</span>
+
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 18,
+                    right: 18,
+                    background: "rgba(255,0,0,0.16)",
+                    color: "#fff",
+                    padding: "8px 14px",
+                    borderRadius: "999px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    backdropFilter: "blur(10px)",
+                    border: "1px solid rgba(255,0,0,0.25)",
+                  }}
+                >
+                  {item.label}
+                </div>
               </div>
-              <div className="videoInfo">
-                <h3>{item.title}</h3>
-                <p>فيديو رسمي ثابت داخل ملفات المشروع ويتم رفعه تلقائياً مع GitHub.</p>
+
+              <div style={{ padding: 24 }}>
+                <h3
+                  style={{
+                    color: "#fff",
+                    fontSize: 24,
+                    marginBottom: 12,
+                    fontWeight: 800,
+                  }}
+                >
+                  {item.title}
+                </h3>
+
+                <p
+                  style={{
+                    color: "rgba(255,255,255,0.72)",
+                    lineHeight: 1.8,
+                    fontSize: 15,
+                  }}
+                >
+                  فيديو رسمي ثابت داخل ملفات المشروع ويتم رفعه تلقائياً مع GitHub.
+                </p>
               </div>
-            </article>
+            </div>
           ))}
         </div>
       </section>
 
       {selectedVideo && (
-        <div className="videoModal" onClick={() => setSelectedVideo(null)}>
-          <div className="modalPlayer" onClick={(e) => e.stopPropagation()}>
-            <button className="closeModal" onClick={() => setSelectedVideo(null)}>✕</button>
-            <video src={selectedVideo.src} controls autoPlay />
+        <div
+          onClick={() => setSelectedVideo(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            background: "rgba(0,0,0,0.92)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 1400,
+              borderRadius: 30,
+              overflow: "hidden",
+              position: "relative",
+              border: "1px solid rgba(255,0,0,0.25)",
+              boxShadow: "0 0 80px rgba(255,0,0,0.25)",
+              background: "#000",
+            }}
+          >
+            <button
+              onClick={() => setSelectedVideo(null)}
+              style={{
+                position: "absolute",
+                top: 18,
+                left: 18,
+                zIndex: 10,
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                border: "none",
+                background: "rgba(255,0,0,0.22)",
+                color: "#fff",
+                fontSize: 22,
+                cursor: "pointer",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              ✕
+            </button>
+
+            <video
+              src={selectedVideo.src}
+              controls
+              autoPlay
+              style={{
+                width: "100%",
+                maxHeight: "90vh",
+                background: "#000",
+              }}
+            />
           </div>
         </div>
       )}
@@ -326,7 +517,9 @@ function ApplySection({ form, setForm, video, setVideo, submit, message, loading
       <div className="sectionHead">
         <span>JOIN RNM</span>
         <h2>التقديم للكلان</h2>
-        <p>ارفع فيديو أدائك، وضع بياناتك، وسيتم مراجعة طلبك من الإدارة.</p>
+        <p>
+          ارفع فيديو أدائك، وضع بياناتك، وسيتم مراجعة طلبك من الإدارة.
+        </p>
       </div>
 
       <div className="applyLayout">
@@ -343,14 +536,36 @@ function ApplySection({ form, setForm, video, setVideo, submit, message, loading
         </div>
 
         <form className="form" onSubmit={submit}>
-          <div className="inputGroup"><input name="player_name" placeholder="اسم اللاعب" value={form.player_name} onChange={update} required /></div>
-          <div className="inputGroup"><input name="pubg_id" placeholder="ID ببجي" value={form.pubg_id} onChange={update} required /></div>
-          <div className="inputGroup"><input name="discord" placeholder="ديسكورد" value={form.discord} onChange={update} /></div>
-          <div className="inputGroup"><input name="device" placeholder="الجهاز" value={form.device} onChange={update} /></div>
-          <div className="inputGroup"><input name="fps" placeholder="الفريمات 60 / 90 / 120" value={form.fps} onChange={update} /></div>
-          <div className="inputGroup"><input name="role" placeholder="الدور IGL / Assaulter / Supporter" value={form.role} onChange={update} /></div>
+          <div className="inputGroup">
+            <input name="player_name" placeholder="اسم اللاعب" value={form.player_name} onChange={update} required />
+          </div>
 
-          <textarea name="description" placeholder="اكتب وصف بسيط عنك وعن مستواك" value={form.description} onChange={update} />
+          <div className="inputGroup">
+            <input name="pubg_id" placeholder="ID ببجي" value={form.pubg_id} onChange={update} required />
+          </div>
+
+          <div className="inputGroup">
+            <input name="discord" placeholder="ديسكورد" value={form.discord} onChange={update} />
+          </div>
+
+          <div className="inputGroup">
+            <input name="device" placeholder="الجهاز" value={form.device} onChange={update} />
+          </div>
+
+          <div className="inputGroup">
+            <input name="fps" placeholder="الفريمات 60 / 90 / 120" value={form.fps} onChange={update} />
+          </div>
+
+          <div className="inputGroup">
+            <input name="role" placeholder="الدور IGL / Assaulter / Supporter" value={form.role} onChange={update} />
+          </div>
+
+          <textarea
+            name="description"
+            placeholder="اكتب وصف بسيط عنك وعن مستواك"
+            value={form.description}
+            onChange={update}
+          />
 
           <label className="uploadBox">
             <Upload />
@@ -359,9 +574,16 @@ function ApplySection({ form, setForm, video, setVideo, submit, message, loading
             <input type="file" accept="video/*" hidden onChange={(e) => setVideo(e.target.files[0])} />
           </label>
 
-          <button className="mainBtn submitBtn" type="submit" disabled={loading}>{loading ? "جاري الإرسال..." : "إرسال التقديم"}</button>
+          <button className="mainBtn submitBtn" type="submit" disabled={loading}>
+            {loading ? "جاري الإرسال..." : "إرسال التقديم"}
+          </button>
 
-          {message && <div className="successMsg"><CheckCircle size={20} />{message}</div>}
+          {message && (
+            <div className="successMsg">
+              <CheckCircle size={20} />
+              {message}
+            </div>
+          )}
         </form>
       </div>
     </section>
@@ -392,7 +614,10 @@ function Admin() {
     setDeletingId(id);
 
     try {
-      const res = await fetch(`${API}/api/applications/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API}/api/applications/${id}`, {
+        method: "DELETE",
+      });
+
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok || json.success === false) {
@@ -412,7 +637,9 @@ function Admin() {
     const q = search.trim().toLowerCase();
     if (!q) return apps;
     return apps.filter((a) =>
-      `${a.player_name} ${a.pubg_id} ${a.discord} ${a.device} ${a.fps} ${a.role}`.toLowerCase().includes(q)
+      `${a.player_name} ${a.pubg_id} ${a.discord} ${a.device} ${a.fps} ${a.role}`
+        .toLowerCase()
+        .includes(q)
     );
   }, [apps, search]);
 
@@ -420,14 +647,32 @@ function Admin() {
     return (
       <main className="adminPage">
         <div className="adminLogin">
-          <div className="adminLogo"><Lock /></div>
+          <div className="adminLogo">
+            <Lock />
+          </div>
           <h1>لوحة إدارة RNM</h1>
           <p>الدخول مخصص للإدارة فقط لمراجعة طلبات الانضمام.</p>
 
-          <input type="password" placeholder="كلمة مرور الإدارة" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input
+            type="password"
+            placeholder="كلمة مرور الإدارة"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-          <button className="mainBtn" onClick={() => password === "admin123" ? setAllowed(true) : alert("كلمة المرور خطأ")}>دخول الإدارة</button>
-          <button className="ghostBtn" onClick={() => go("/")}>رجوع للموقع</button>
+          <button
+            className="mainBtn"
+            onClick={() => {
+              if (password === "admin123") setAllowed(true);
+              else alert("كلمة المرور خطأ");
+            }}
+          >
+            دخول الإدارة
+          </button>
+
+          <button className="ghostBtn" onClick={() => go("/")}>
+            رجوع للموقع
+          </button>
         </div>
       </main>
     );
@@ -441,9 +686,14 @@ function Admin() {
           <h2>RNM</h2>
           <span>ADMIN PANEL</span>
         </div>
+
         <button onClick={loadApps}>تحديث الطلبات</button>
         <button onClick={() => go("/")}>فتح الموقع</button>
-        <div className="sideStat"><b>{apps.length}</b><span>إجمالي الطلبات</span></div>
+
+        <div className="sideStat">
+          <b>{apps.length}</b>
+          <span>إجمالي الطلبات</span>
+        </div>
       </aside>
 
       <section className="adminContent">
@@ -455,7 +705,11 @@ function Admin() {
 
           <div className="searchBox">
             <Search />
-            <input placeholder="بحث بالاسم أو ID أو الدور..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input
+              placeholder="بحث بالاسم أو ID أو الدور..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </div>
 
@@ -467,8 +721,25 @@ function Admin() {
                   <h3>{a.player_name}</h3>
                   <span>Application #{a.id}</span>
                 </div>
-                <div className="adminCardActions">
-                  <button type="button" onClick={() => deleteApplication(a.id, a.player_name)} disabled={deletingId === a.id} title="حذف الطلب" className="deleteBtn">
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => deleteApplication(a.id, a.player_name)}
+                    disabled={deletingId === a.id}
+                    title="حذف الطلب"
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 14,
+                      border: "1px solid rgba(255, 0, 0, 0.55)",
+                      background: "rgba(255, 0, 0, 0.12)",
+                      color: "#ff2a2a",
+                      display: "grid",
+                      placeItems: "center",
+                      cursor: deletingId === a.id ? "not-allowed" : "pointer",
+                      opacity: deletingId === a.id ? 0.55 : 1,
+                    }}
+                  >
                     <Trash2 size={19} />
                   </button>
                   <Trophy />
@@ -485,11 +756,16 @@ function Admin() {
               </div>
 
               <p className="desc">{a.description || "لا يوجد وصف"}</p>
+
               <video controls src={a.video_url?.startsWith("http") ? a.video_url : `${API}${a.video_url}`} />
             </div>
           ))}
 
-          {filtered.length === 0 && <div className="emptyState">لا توجد طلبات مطابقة.</div>}
+          {filtered.length === 0 && (
+            <div className="emptyState">
+              لا توجد طلبات مطابقة.
+            </div>
+          )}
         </div>
       </section>
     </main>
@@ -511,6 +787,7 @@ function Footer() {
 function App() {
   const path = useRoute();
   const cleanPath = path.replace(/\/+$/, "") || "/";
+
   if (cleanPath === "/admin") return <Admin />;
   return <Home />;
 }
