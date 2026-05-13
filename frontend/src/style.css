@@ -1018,11 +1018,9 @@ footer,
   inset: -28px -24px;
   z-index: -2;
   border-radius: 32px;
-  background:
-    radial-gradient(circle at 50% 45%, rgba(255, 0, 0, 0.38), transparent 56%),
-    conic-gradient(from 120deg, transparent, rgba(255, 0, 0, 0.22), transparent, rgba(255, 255, 255, 0.08), transparent);
-  filter: blur(2px);
-  opacity: 0.95;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 0, 0, 0.38), transparent 62%);
+  filter: blur(7px);
+  opacity: 0.9;
 }
 
 .rnmHeroLetters::after {
@@ -1039,17 +1037,7 @@ footer,
 }
 
 .rnmHeroSlash {
-  position: absolute;
-  z-index: 1;
-  width: 245px;
-  height: 245px;
-  border-radius: 50%;
-  background:
-    linear-gradient(135deg, transparent 42%, rgba(255, 0, 0, 0.95) 47%, rgba(255, 0, 0, 0.12) 51%, transparent 56%),
-    radial-gradient(circle, transparent 53%, rgba(255, 0, 0, 0.28) 54%, transparent 66%);
-  opacity: 0.95;
-  animation: rnmSlashRotate 8s linear infinite;
-  filter: drop-shadow(0 0 18px rgba(255, 0, 0, 0.75));
+  display: none !important;
 }
 
 .heroOrb::after {
@@ -1073,10 +1061,6 @@ footer,
   }
 }
 
-@keyframes rnmSlashRotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 
 /* RESPONSIVE */
 
@@ -1233,8 +1217,4 @@ footer,
     letter-spacing: 6px;
   }
 
-  .rnmHeroSlash {
-    width: 200px;
-    height: 200px;
-  }
 }
