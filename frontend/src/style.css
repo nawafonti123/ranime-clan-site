@@ -2826,3 +2826,69 @@ select option {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* CLAN MEMBERS IMPORT */
+.memberImportForm {
+  margin-bottom: 34px;
+  grid-template-columns: 1fr;
+  border-color: rgba(255, 0, 0, 0.38);
+  background:
+    radial-gradient(circle at top right, rgba(255, 0, 0, 0.18), transparent 42%),
+    linear-gradient(145deg, rgba(255, 0, 0, 0.11), rgba(255, 255, 255, 0.035)),
+    rgba(8, 8, 8, 0.82);
+}
+
+.memberImportInfo,
+.memberImportUpload {
+  grid-column: 1 / -1;
+}
+
+.memberImportInfo {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.36);
+  border: 1px solid rgba(255, 0, 0, 0.22);
+}
+
+.memberImportInfo svg {
+  width: 48px;
+  height: 48px;
+  color: #ff2525;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0 18px rgba(255, 0, 0, 0.55));
+}
+
+.memberImportInfo h3 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  color: #fff;
+}
+
+.memberImportInfo p {
+  margin: 0;
+  color: #c9c9c9;
+  line-height: 1.9;
+}
+
+.memberImportInfo b {
+  color: #ff3535;
+}
+
+.memberImportUpload {
+  min-height: 116px;
+}
+
+@media (max-width: 760px) {
+  .memberImportInfo {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .memberImportInfo h3 {
+    font-size: 23px;
+  }
+}

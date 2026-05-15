@@ -847,6 +847,9 @@ function Admin() {
   const [savingVideo, setSavingVideo] = useState(false);
   const [memberRanks, setMemberRanks] = useState({});
   const [adminTab, setAdminTab] = useState("applications");
+  const [membersImportFile, setMembersImportFile] = useState(null);
+  const [importingMembers, setImportingMembers] = useState(false);
+  const [membersImportMessage, setMembersImportMessage] = useState("");
 
   useEffect(() => {
     if (allowed) loadAdminData();
@@ -889,6 +892,43 @@ function Admin() {
       setClanMembers(Array.isArray(json) ? json : []);
     } catch {
       setClanMembers([]);
+    }
+  }
+
+  async function importClanMembers(e) {
+    e.preventDefault();
+
+    if (!membersImportFile) {
+      setMembersImportMessage("اختر ملف Excel أو CSV أولاً");
+      return;
+    }
+
+    const data = new FormData();
+    data.append("file", membersImportFile);
+
+    setImportingMembers(true);
+    setMembersImportMessage("جاري استيراد أعضاء الكلان...");
+
+    try {
+      const res = await fetch(`${API}/api/clan-members/import`, {
+        method: "POST",
+        body: data,
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        setMembersImportMessage(json.message || json.detail || "فشل استيراد الأعضاء");
+        return;
+      }
+
+      setMembersImportMessage(json.message || `تم استيراد ${json.imported || 0} عضو بنجاح`);
+      setMembersImportFile(null);
+      await loadClanMembers();
+    } catch {
+      setMembersImportMessage("حدث خطأ أثناء استيراد الملف");
+    } finally {
+      setImportingMembers(false);
     }
   }
 
@@ -1261,6 +1301,45 @@ function Admin() {
                 <p>الأعضاء المقبولين يظهرون في صفحة أعضاء الكلان على شكل هرم حسب الرتبة.</p>
               </div>
             </div>
+
+            <form className="form memberImportForm" onSubmit={importClanMembers}>
+              <div className="memberImportInfo">
+                <Upload />
+                <div>
+                  <h3>استيراد أعضاء الكلان من Excel</h3>
+                  <p>
+                    ارفع ملف فيه عمودين فقط: <b>Pubg Name</b> و <b>Status</b>.
+                    يدعم xlsx / xlsm / csv، ويتم ترتيب الأعضاء تلقائياً حسب الرتبة.
+                  </p>
+                </div>
+              </div>
+
+              <label className="uploadBox memberImportUpload">
+                <Upload />
+                <b>{membersImportFile ? membersImportFile.name : "اختر ملف الأعضاء"}</b>
+                <span>XLSX / XLSM / CSV</span>
+                <input
+                  type="file"
+                  accept=".xlsx,.xlsm,.csv"
+                  hidden
+                  onChange={(e) => {
+                    setMembersImportFile(e.target.files[0] || null);
+                    setMembersImportMessage("");
+                  }}
+                />
+              </label>
+
+              <button className="mainBtn submitBtn" type="submit" disabled={importingMembers}>
+                {importingMembers ? "جاري الاستيراد..." : "استيراد الأعضاء"}
+              </button>
+
+              {membersImportMessage && (
+                <div className="successMsg">
+                  <CheckCircle size={20} />
+                  {membersImportMessage}
+                </div>
+              )}
+            </form>
 
             <ClanMembersHierarchy members={clanMembers} adminMode onRankChange={updateClanMemberRank} onRemove={removeClanMember} />
           </>

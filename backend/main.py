@@ -5,6 +5,8 @@ from datetime import datetime
 from urllib.parse import urlparse, unquote
 import os
 import uuid
+import csv
+from io import BytesIO, StringIO
 
 app = FastAPI(title="RANIME Gaming API")
 
@@ -70,6 +72,109 @@ CLAN_RANKS = {
     "co_leader": "كو ليدر",
     "leader": "رئيس الكلان",
 }
+
+RANK_ORDER_MAP = {"leader": 1, "co_leader": 2, "elite": 3, "member": 4}
+
+EXCEL_ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".csv"}
+
+
+def normalize_rank(status: str | None) -> str:
+    value = (status or "").strip().lower().replace("-", "_").replace(" ", "_")
+
+    if value in {"leader", "president", "owner", "chief", "رئيس", "رئيس_الكلان"}:
+        return "leader"
+
+    if value in {"co_leader", "coleader", "co", "co_leadr", "كو_ليدر", "كوليدر"}:
+        return "co_leader"
+
+    if value in {"elite", "النخبة", "نخبة", "لاعب_نخبة"}:
+        return "elite"
+
+    return "member"
+
+
+def row_value(row: dict, possible_names: list[str]) -> str:
+    normalized = {
+        str(k).strip().lower().replace(" ", "").replace("_", ""): v
+        for k, v in row.items()
+        if k is not None
+    }
+    for name in possible_names:
+        key = name.strip().lower().replace(" ", "").replace("_", "")
+        value = normalized.get(key)
+        if value is not None:
+            return str(value).strip()
+    return ""
+
+
+def parse_members_file(filename: str, content: bytes) -> list[dict]:
+    ext = os.path.splitext(filename or "")[1].lower()
+
+    if ext not in EXCEL_ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="صيغة الملف غير مدعومة. استخدم xlsx أو xlsm أو csv")
+
+    rows: list[dict] = []
+
+    if ext == ".csv":
+        text = content.decode("utf-8-sig", errors="ignore")
+        reader = csv.DictReader(StringIO(text))
+        rows = [dict(r) for r in reader]
+    else:
+        try:
+            from openpyxl import load_workbook
+        except Exception:
+            raise HTTPException(status_code=500, detail="مكتبة openpyxl غير مثبتة على السيرفر")
+
+        workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
+        sheet = workbook.active
+        values = list(sheet.iter_rows(values_only=True))
+
+        if not values:
+            return []
+
+        headers = [str(v).strip() if v is not None else "" for v in values[0]]
+        for values_row in values[1:]:
+            item = {}
+            for index, header in enumerate(headers):
+                if not header:
+                    continue
+                item[header] = values_row[index] if index < len(values_row) else ""
+            rows.append(item)
+
+    members: list[dict] = []
+    seen: set[str] = set()
+
+    for row in rows:
+        player_name = row_value(row, ["Pubg Name", "PUBG Name", "player_name", "Player Name", "Name", "الاسم"])
+        status = row_value(row, ["Status", "Rank", "clan_rank", "Clan Rank", "الرتبة", "الحالة"])
+
+        if not player_name:
+            continue
+
+        key = player_name.strip().lower()
+        if key in seen:
+            continue
+        seen.add(key)
+
+        clan_rank = normalize_rank(status)
+        members.append({
+            "player_name": player_name.strip(),
+            "pubg_id": "",
+            "discord": "",
+            "device": "",
+            "fps": "",
+            "game_role": "",
+            "description": "",
+            "video_url": None,
+            "profile_image_url": None,
+            "clan_rank": clan_rank,
+            "clan_title": CLAN_RANKS[clan_rank],
+            "rank_order": RANK_ORDER_MAP[clan_rank],
+            "is_active": True,
+            "created_at": datetime.utcnow().isoformat(),
+        })
+
+    return members
 
 
 async def upload_file_to_storage(file: UploadFile, folder: str, allowed_types: set[str], default_name: str) -> tuple[str, str]:
@@ -231,6 +336,68 @@ def get_clan_members():
         return result.data or []
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Clan members read failed: {e}")
+
+
+
+
+@app.post("/api/clan-members/import")
+async def import_clan_members(file: UploadFile = File(...)):
+    sb = get_supabase()
+
+    content = await file.read()
+    members = parse_members_file(file.filename or "", content)
+
+    if not members:
+        raise HTTPException(status_code=400, detail="لم يتم العثور على أعضاء داخل الملف")
+
+    try:
+        existing_result = (
+            sb.table("clan_members")
+            .select("id, player_name")
+            .execute()
+        )
+        existing = existing_result.data or []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Clan members read failed: {e}")
+
+    existing_by_name = {
+        (item.get("player_name") or "").strip().lower(): item.get("id")
+        for item in existing
+        if item.get("player_name")
+    }
+
+    inserted_count = 0
+    updated_count = 0
+
+    for member in members:
+        key = member["player_name"].strip().lower()
+        current_id = existing_by_name.get(key)
+
+        try:
+            if current_id:
+                sb.table("clan_members").update({
+                    "clan_rank": member["clan_rank"],
+                    "clan_title": member["clan_title"],
+                    "rank_order": member["rank_order"],
+                    "is_active": True,
+                }).eq("id", current_id).execute()
+                updated_count += 1
+            else:
+                result = sb.table("clan_members").insert(member).execute()
+                inserted = (result.data or [{}])[0]
+                if inserted.get("id"):
+                    existing_by_name[key] = inserted.get("id")
+                inserted_count += 1
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Import failed for {member['player_name']}: {e}")
+
+    return {
+        "success": True,
+        "message": f"تم استيراد الأعضاء بنجاح: جديد {inserted_count} / تحديث {updated_count}",
+        "imported": inserted_count,
+        "updated": updated_count,
+        "total": len(members),
+    }
 
 
 @app.post("/api/applications/{application_id}/approve")
