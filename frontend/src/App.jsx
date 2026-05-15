@@ -299,6 +299,7 @@ function Navbar() {
     ["الرئيسية", "#top"],
     ["الكلان", "#clan"],
     ["الفيديوهات", "#videos"],
+    ["التصاميم", "#designs"],
     ["التقديم", "#apply"],
   ];
 
@@ -1022,11 +1023,11 @@ function Admin() {
           <span>ADMIN PANEL</span>
         </div>
 
-        <button onClick={() => setAdminTab("applications")}>طلبات التقديم</button>
-        <button onClick={() => setAdminTab("videos")}>إدارة فيديوهات الموقع</button>
-        <button onClick={() => setAdminTab("requests")}>طلبات التصاميم</button>
-        <button onClick={loadAdminData}>تحديث الكل</button>
-        <button onClick={() => go("/")}>فتح الموقع</button>
+        <button className={adminTab === "applications" ? "active" : ""} onClick={() => setAdminTab("applications")}>طلبات التقديم</button>
+        <button className={adminTab === "videos" ? "active" : ""} onClick={() => setAdminTab("videos")}>إدارة فيديوهات الموقع</button>
+        <button className={adminTab === "requests" ? "active" : ""} onClick={() => setAdminTab("requests")}>طلبات التصاميم</button>
+        <button className="softAdminBtn" onClick={loadAdminData}>تحديث الكل</button>
+        <button className="softAdminBtn" onClick={() => go("/")}>فتح الموقع</button>
 
         <div className="sideStat">
           <b>{apps.length}</b>
