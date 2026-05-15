@@ -1856,3 +1856,181 @@ body::before {
     max-height: 410px;
   }
 }
+
+/* ADMIN COMPACT FINAL FIX */
+.adminDashboard {
+  grid-template-columns: minmax(0, 1fr) 300px !important;
+  min-height: 100vh !important;
+  background: radial-gradient(circle at 70% 8%, rgba(255,0,0,.12), transparent 34%), #040404 !important;
+}
+
+.adminContent {
+  padding: 18px 28px 34px !important;
+  min-height: 100vh !important;
+}
+
+.adminTop,
+.adminPanel,
+.adminVideoForm,
+.adminList,
+.adminMediaList {
+  max-width: 1040px !important;
+}
+
+.adminTop {
+  margin-bottom: 18px !important;
+  padding: 16px 18px !important;
+  border-radius: 22px !important;
+}
+
+.adminTop h1 {
+  font-size: clamp(30px, 4vw, 44px) !important;
+  margin: 0 !important;
+}
+
+.adminTop p {
+  margin: 6px 0 0 !important;
+}
+
+.adminVideoForm,
+.adminPanel,
+.adminCard,
+.form {
+  padding: 22px !important;
+  border-radius: 24px !important;
+}
+
+.adminVideoForm {
+  margin-bottom: 18px !important;
+}
+
+.adminVideoForm textarea,
+.adminPanel textarea,
+.form textarea {
+  min-height: 105px !important;
+}
+
+.adminVideoForm .uploadBox,
+.adminPanel .uploadBox,
+.form .uploadBox {
+  min-height: 118px !important;
+}
+
+.adminSide {
+  padding: 16px 18px !important;
+  height: 100vh !important;
+  background: linear-gradient(180deg, rgba(20,0,0,.96), rgba(2,2,2,.98)) !important;
+}
+
+.sideBrand {
+  padding: 18px 12px 20px !important;
+  border-radius: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.sideBrand .adminSideLogoImg {
+  width: 94px !important;
+  height: 94px !important;
+  margin: 0 auto 8px !important;
+  padding: 6px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  background: radial-gradient(circle, rgba(255,0,0,.18), rgba(0,0,0,.96)) !important;
+  border: 1px solid rgba(255,0,0,.55) !important;
+  box-shadow: inset 0 0 22px rgba(255,0,0,.18), 0 0 30px rgba(255,0,0,.32) !important;
+}
+
+.sideBrand h2 {
+  margin: 0 !important;
+  font-size: 42px !important;
+  line-height: 1 !important;
+}
+
+.sideBrand span {
+  margin-top: 4px !important;
+}
+
+.adminSide button {
+  min-height: 52px !important;
+  margin-top: 12px !important;
+  border-radius: 15px !important;
+  padding: 12px !important;
+}
+
+.sideStat {
+  margin-top: 12px !important;
+  padding: 16px 12px !important;
+  border-radius: 18px !important;
+}
+
+.sideStat b {
+  font-size: 34px !important;
+  line-height: 1.1 !important;
+}
+
+.sideStat span {
+  font-size: 13px !important;
+}
+
+.adminList,
+.adminMediaList {
+  gap: 16px !important;
+  margin-top: 14px !important;
+}
+
+.emptyState {
+  padding: 28px !important;
+  min-height: 0 !important;
+  border-radius: 22px !important;
+}
+
+input,
+textarea {
+  padding: 13px 15px !important;
+  border-radius: 15px !important;
+}
+
+.mainBtn,
+.ghostBtn,
+.dangerBtn {
+  min-height: 48px !important;
+  padding: 11px 22px !important;
+  border-radius: 14px !important;
+}
+
+.adminActionsRow {
+  margin-top: 12px !important;
+  gap: 10px !important;
+}
+
+@media (max-width: 1100px) {
+  .adminDashboard {
+    grid-template-columns: 1fr !important;
+  }
+
+  .adminSide {
+    height: auto !important;
+    position: relative !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .sideBrand,
+  .sideStat {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .adminContent {
+    padding: 14px !important;
+  }
+
+  .adminSide {
+    grid-template-columns: 1fr !important;
+    padding: 14px !important;
+  }
+}
