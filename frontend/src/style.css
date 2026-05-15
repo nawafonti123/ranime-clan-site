@@ -2034,3 +2034,124 @@ textarea {
     padding: 14px !important;
   }
 }
+
+/* ADMIN NO EMPTY SCROLL FIX */
+html:has(.adminDashboard),
+body:has(.adminDashboard) {
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden !important;
+}
+
+body:has(.adminDashboard) {
+  background: #030303 !important;
+}
+
+.adminDashboard {
+  height: 100vh !important;
+  min-height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 300px !important;
+  align-items: stretch !important;
+}
+
+.adminSide {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  position: sticky !important;
+  top: 0 !important;
+}
+
+.adminContent {
+  height: 100vh !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 18px 28px !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,0,0,0.45) transparent;
+}
+
+.adminContent::-webkit-scrollbar {
+  width: 7px;
+}
+
+.adminContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.adminContent::-webkit-scrollbar-thumb {
+  background: rgba(255,0,0,0.45);
+  border-radius: 999px;
+}
+
+.adminTop,
+.adminPanel,
+.adminVideoForm,
+.adminList,
+.adminMediaList {
+  max-width: 1040px !important;
+  margin-right: auto !important;
+  margin-left: auto !important;
+}
+
+.adminTop {
+  margin-bottom: 16px !important;
+}
+
+.adminPanel,
+.adminVideoForm {
+  margin-bottom: 16px !important;
+}
+
+.adminList,
+.adminMediaList {
+  margin-top: 12px !important;
+  padding-bottom: 24px !important;
+}
+
+.emptyState {
+  padding: 26px 24px !important;
+  min-height: unset !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  width: min(700px, 100%) !important;
+}
+
+.adminSide .sideBrand {
+  min-height: unset !important;
+}
+
+.adminSide .sideStat:last-child {
+  margin-bottom: 14px !important;
+}
+
+@media (max-width: 1100px) {
+  html:has(.adminDashboard),
+  body:has(.adminDashboard) {
+    overflow: auto !important;
+    height: auto !important;
+  }
+
+  .adminDashboard {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .adminSide {
+    height: auto !important;
+    max-height: none !important;
+    position: relative !important;
+  }
+
+  .adminContent {
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
