@@ -57,25 +57,39 @@ VIDEO_ALLOWED_TYPES = {
     "video/x-matroska",
 }
 
+IMAGE_ALLOWED_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+}
 
-async def upload_video_to_storage(video: UploadFile, folder: str) -> tuple[str, str]:
-    """Upload a video to Supabase storage and return (public_url, storage_path)."""
+CLAN_RANKS = {
+    "member": "لاعب عادي",
+    "elite": "لاعب نخبة",
+    "co_leader": "كو ليدر",
+    "leader": "رئيس الكلان",
+}
+
+
+async def upload_file_to_storage(file: UploadFile, folder: str, allowed_types: set[str], default_name: str) -> tuple[str, str]:
+    """Upload any allowed file to Supabase storage and return (public_url, storage_path)."""
     sb = get_supabase()
 
-    if video.content_type not in VIDEO_ALLOWED_TYPES:
-        raise HTTPException(status_code=400, detail="نوع الفيديو غير مدعوم")
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="نوع الملف غير مدعوم")
 
-    ext = os.path.splitext(video.filename or "video.mp4")[1] or ".mp4"
+    ext = os.path.splitext(file.filename or default_name)[1] or os.path.splitext(default_name)[1] or ".bin"
     filename = f"{uuid.uuid4().hex}{ext}"
     storage_path = f"{folder}/{filename}"
-    content = await video.read()
+    content = await file.read()
 
     try:
         sb.storage.from_(SUPABASE_BUCKET).upload(
             path=storage_path,
             file=content,
             file_options={
-                "content-type": video.content_type or "video/mp4",
+                "content-type": file.content_type or "application/octet-stream",
                 "upsert": "false",
             },
         )
@@ -84,6 +98,14 @@ async def upload_video_to_storage(video: UploadFile, folder: str) -> tuple[str, 
 
     public_url = sb.storage.from_(SUPABASE_BUCKET).get_public_url(storage_path)
     return public_url, storage_path
+
+
+async def upload_video_to_storage(video: UploadFile, folder: str) -> tuple[str, str]:
+    return await upload_file_to_storage(video, folder, VIDEO_ALLOWED_TYPES, "video.mp4")
+
+
+async def upload_image_to_storage(image: UploadFile, folder: str) -> tuple[str, str]:
+    return await upload_file_to_storage(image, folder, IMAGE_ALLOWED_TYPES, "profile.png")
 
 
 def safe_remove_storage_file(video_url: str | None) -> None:
@@ -111,9 +133,11 @@ async def apply_to_clan(
     role: str = Form(""),
     description: str = Form(""),
     video: UploadFile = File(...),
+    profile_image: UploadFile = File(...),
 ):
     sb = get_supabase()
     public_url, storage_path = await upload_video_to_storage(video, "applications")
+    image_url, image_storage_path = await upload_image_to_storage(profile_image, "profile-images")
 
     row = {
         "player_name": player_name,
@@ -124,6 +148,10 @@ async def apply_to_clan(
         "role": role,
         "description": description,
         "video_url": public_url,
+        "storage_path": storage_path,
+        "profile_image_url": image_url,
+        "profile_image_storage_path": image_storage_path,
+        "status": "pending",
         "created_at": datetime.utcnow().isoformat(),
     }
 
@@ -154,7 +182,7 @@ def delete_application(application_id: int):
     try:
         found = (
             sb.table("applications")
-            .select("id, video_url")
+            .select("id, video_url, profile_image_url")
             .eq("id", application_id)
             .limit(1)
             .execute()
@@ -166,14 +194,15 @@ def delete_application(application_id: int):
         raise HTTPException(status_code=404, detail="طلب التقديم غير موجود")
 
     video_url = found.data[0].get("video_url")
-    storage_path = storage_path_from_public_url(video_url)
-
-    if storage_path:
-        try:
-            sb.storage.from_(SUPABASE_BUCKET).remove([storage_path])
-        except Exception:
-            # لا نوقف حذف الطلب إذا فشل حذف الفيديو من التخزين
-            pass
+    profile_image_url = found.data[0].get("profile_image_url")
+    for file_url in [video_url, profile_image_url]:
+        storage_path = storage_path_from_public_url(file_url)
+        if storage_path:
+            try:
+                sb.storage.from_(SUPABASE_BUCKET).remove([storage_path])
+            except Exception:
+                # لا نوقف حذف الطلب إذا فشل حذف الملف من التخزين
+                pass
 
     try:
         sb.table("applications").delete().eq("id", application_id).execute()
@@ -181,6 +210,112 @@ def delete_application(application_id: int):
         raise HTTPException(status_code=500, detail=f"Database delete failed: {e}")
 
     return {"success": True, "message": "تم حذف طلب التقديم بنجاح"}
+
+
+# =========================
+# CLAN MEMBERS MANAGEMENT
+# =========================
+
+@app.get("/api/clan-members")
+def get_clan_members():
+    sb = get_supabase()
+    try:
+        result = (
+            sb.table("clan_members")
+            .select("*")
+            .eq("is_active", True)
+            .order("rank_order", desc=False)
+            .order("id", desc=False)
+            .execute()
+        )
+        return result.data or []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Clan members read failed: {e}")
+
+
+@app.post("/api/applications/{application_id}/approve")
+def approve_application_as_member(
+    application_id: int,
+    clan_rank: str = Form("member"),
+    custom_title: str = Form(""),
+):
+    sb = get_supabase()
+
+    if clan_rank not in CLAN_RANKS:
+        raise HTTPException(status_code=400, detail="رتبة العضو غير صحيحة")
+
+    rank_order_map = {"leader": 1, "co_leader": 2, "elite": 3, "member": 4}
+
+    try:
+        found = sb.table("applications").select("*").eq("id", application_id).limit(1).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Application read failed: {e}")
+
+    if not found.data:
+        raise HTTPException(status_code=404, detail="طلب التقديم غير موجود")
+
+    app_row = found.data[0]
+    row = {
+        "application_id": application_id,
+        "player_name": app_row.get("player_name"),
+        "pubg_id": app_row.get("pubg_id"),
+        "discord": app_row.get("discord") or "",
+        "device": app_row.get("device") or "",
+        "fps": app_row.get("fps") or "",
+        "game_role": app_row.get("role") or "",
+        "description": app_row.get("description") or "",
+        "video_url": app_row.get("video_url"),
+        "profile_image_url": app_row.get("profile_image_url"),
+        "clan_rank": clan_rank,
+        "clan_title": custom_title or CLAN_RANKS[clan_rank],
+        "rank_order": rank_order_map[clan_rank],
+        "is_active": True,
+        "created_at": datetime.utcnow().isoformat(),
+    }
+
+    try:
+        inserted = sb.table("clan_members").insert(row).execute()
+        sb.table("applications").update({"status": "approved", "reviewed_at": datetime.utcnow().isoformat()}).eq("id", application_id).execute()
+        return {"success": True, "message": "تم قبول اللاعب وإضافته إلى أعضاء الكلان", "member": (inserted.data or [row])[0]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Approve application failed: {e}")
+
+
+@app.put("/api/clan-members/{member_id}")
+def update_clan_member(
+    member_id: int,
+    clan_rank: str = Form("member"),
+    custom_title: str = Form(""),
+    is_active: bool = Form(True),
+):
+    sb = get_supabase()
+
+    if clan_rank not in CLAN_RANKS:
+        raise HTTPException(status_code=400, detail="رتبة العضو غير صحيحة")
+
+    rank_order_map = {"leader": 1, "co_leader": 2, "elite": 3, "member": 4}
+    updates = {
+        "clan_rank": clan_rank,
+        "clan_title": custom_title or CLAN_RANKS[clan_rank],
+        "rank_order": rank_order_map[clan_rank],
+        "is_active": is_active,
+    }
+
+    try:
+        result = sb.table("clan_members").update(updates).eq("id", member_id).execute()
+        return {"success": True, "message": "تم تحديث عضو الكلان", "member": (result.data or [updates])[0]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Clan member update failed: {e}")
+
+
+@app.delete("/api/clan-members/{member_id}")
+def delete_clan_member(member_id: int):
+    sb = get_supabase()
+    try:
+        sb.table("clan_members").update({"is_active": False}).eq("id", member_id).execute()
+        return {"success": True, "message": "تم إزالة العضو من صفحة الكلان"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Clan member delete failed: {e}")
 
 
 # =========================

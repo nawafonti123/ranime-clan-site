@@ -22,6 +22,8 @@ import {
   IdCard,
   MessageSquare,
   Trash2,
+  UserPlus,
+  ChevronDown,
 } from "lucide-react";
 import "./style.css";
 import clanVideo1 from "./VID-1.mp4";
@@ -224,6 +226,7 @@ function Home() {
   });
 
   const [video, setVideo] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -235,9 +238,15 @@ function Home() {
       return;
     }
 
+    if (!profileImage) {
+      setMessage("ارفع صورة حسابك في ببجي أولاً");
+      return;
+    }
+
     const data = new FormData();
     Object.entries(form).forEach(([k, v]) => data.append(k, v));
     data.append("video", video);
+    data.append("profile_image", profileImage);
 
     setLoading(true);
     setMessage("جاري رفع الطلب...");
@@ -262,6 +271,7 @@ function Home() {
           description: "",
         });
         setVideo(null);
+        setProfileImage(null);
       }
     } catch {
       setMessage("حدث خطأ أثناء الرفع");
@@ -284,6 +294,8 @@ function Home() {
         setForm={setForm}
         video={video}
         setVideo={setVideo}
+        profileImage={profileImage}
+        setProfileImage={setProfileImage}
         submit={submit}
         message={message}
         loading={loading}
@@ -299,6 +311,7 @@ function Navbar() {
   const links = [
     ["الرئيسية", "#top"],
     ["الكلان", "#clan"],
+    ["أعضاء الكلان", "/members"],
     ["الفيديوهات", "#videos"],
     ["التصاميم", "#designs"],
     ["التقديم", "#apply"],
@@ -316,9 +329,15 @@ function Navbar() {
 
       <div className={`navLinks ${open ? "show" : ""}`}>
         {links.map(([label, href]) => (
-          <a key={label} href={href} onClick={() => setOpen(false)}>
-            {label}
-          </a>
+          href.startsWith("/") ? (
+            <button key={label} type="button" onClick={() => { setOpen(false); go(href); }}>
+              {label}
+            </button>
+          ) : (
+            <a key={label} href={href} onClick={() => setOpen(false)}>
+              {label}
+            </a>
+          )
         ))}
       </div>
 
@@ -719,7 +738,7 @@ function VideoRequestSection() {
   );
 }
 
-function ApplySection({ form, setForm, video, setVideo, submit, message, loading }) {
+function ApplySection({ form, setForm, video, setVideo, profileImage, setProfileImage, submit, message, loading }) {
   function update(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
@@ -786,6 +805,13 @@ function ApplySection({ form, setForm, video, setVideo, submit, message, loading
             <input type="file" accept="video/*" hidden onChange={(e) => setVideo(e.target.files[0])} />
           </label>
 
+          <label className="uploadBox profileUploadBox">
+            <UserPlus />
+            <b>{profileImage ? profileImage.name : "ارفع صورة حسابك في ببجي"}</b>
+            <span>PNG / JPG / WEBP — تظهر في صفحة أعضاء الكلان بعد القبول</span>
+            <input type="file" accept="image/*" hidden onChange={(e) => setProfileImage(e.target.files[0])} />
+          </label>
+
           <button className="mainBtn submitBtn" type="submit" disabled={loading}>
             {loading ? "جاري الإرسال..." : "إرسال التقديم"}
           </button>
@@ -806,6 +832,7 @@ function Admin() {
   const [apps, setApps] = useState([]);
   const [siteVideos, setSiteVideos] = useState([]);
   const [videoRequests, setVideoRequests] = useState([]);
+  const [clanMembers, setClanMembers] = useState([]);
   const [password, setPassword] = useState("");
   const [allowed, setAllowed] = useState(false);
   const [search, setSearch] = useState("");
@@ -818,6 +845,7 @@ function Admin() {
     file: null,
   });
   const [savingVideo, setSavingVideo] = useState(false);
+  const [memberRanks, setMemberRanks] = useState({});
   const [adminTab, setAdminTab] = useState("applications");
 
   useEffect(() => {
@@ -825,7 +853,7 @@ function Admin() {
   }, [allowed]);
 
   async function loadAdminData() {
-    await Promise.all([loadApps(), loadSiteVideos(), loadVideoRequests()]);
+    await Promise.all([loadApps(), loadSiteVideos(), loadVideoRequests(), loadClanMembers()]);
   }
 
   async function loadApps() {
@@ -851,6 +879,67 @@ function Admin() {
       setVideoRequests(Array.isArray(json) ? json : []);
     } catch {
       setVideoRequests([]);
+    }
+  }
+
+  async function loadClanMembers() {
+    try {
+      const res = await fetch(`${API}/api/clan-members`);
+      const json = await res.json();
+      setClanMembers(Array.isArray(json) ? json : []);
+    } catch {
+      setClanMembers([]);
+    }
+  }
+
+  async function approveApplication(id) {
+    const rank = memberRanks[id] || "member";
+    const data = new FormData();
+    data.append("clan_rank", rank);
+
+    try {
+      const res = await fetch(`${API}/api/applications/${id}/approve`, { method: "POST", body: data });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل قبول اللاعب");
+        return;
+      }
+      await Promise.all([loadApps(), loadClanMembers()]);
+      alert(json.message || "تم قبول اللاعب");
+    } catch {
+      alert("حدث خطأ أثناء قبول اللاعب");
+    }
+  }
+
+  async function updateClanMemberRank(id, rank) {
+    const data = new FormData();
+    data.append("clan_rank", rank);
+    try {
+      const res = await fetch(`${API}/api/clan-members/${id}`, { method: "PUT", body: data });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل تحديث العضو");
+        return;
+      }
+      await loadClanMembers();
+    } catch {
+      alert("حدث خطأ أثناء تحديث العضو");
+    }
+  }
+
+  async function removeClanMember(id) {
+    const ok = window.confirm("هل تريد إزالة هذا العضو من هرم الكلان؟");
+    if (!ok) return;
+    try {
+      const res = await fetch(`${API}/api/clan-members/${id}`, { method: "DELETE" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل إزالة العضو");
+        return;
+      }
+      setClanMembers((prev) => prev.filter((m) => m.id !== id));
+    } catch {
+      alert("حدث خطأ أثناء إزالة العضو");
     }
   }
 
@@ -1064,6 +1153,7 @@ function Admin() {
         </div>
 
         <button className={adminTab === "applications" ? "active" : ""} onClick={() => setAdminTab("applications")}>طلبات التقديم</button>
+        <button className={adminTab === "members" ? "active" : ""} onClick={() => setAdminTab("members")}>التحكم بأعضاء الكلان</button>
         <button className={adminTab === "videos" ? "active" : ""} onClick={() => setAdminTab("videos")}>إدارة فيديوهات الموقع</button>
         <button className={adminTab === "requests" ? "active" : ""} onClick={() => setAdminTab("requests")}>طلبات التصاميم</button>
         <button className="softAdminBtn" onClick={loadAdminData}>تحديث الكل</button>
@@ -1072,6 +1162,10 @@ function Admin() {
         <div className="sideStat">
           <b>{apps.length}</b>
           <span>إجمالي طلبات الانضمام</span>
+        </div>
+        <div className="sideStat">
+          <b>{clanMembers.length}</b>
+          <span>أعضاء ظاهرين في هرم الكلان</span>
         </div>
         <div className="sideStat">
           <b>{videoRequests.filter((r) => r.status === "pending").length}</b>
@@ -1120,6 +1214,21 @@ function Admin() {
                     </div>
                   </div>
 
+                  <div className="applicationPreviewRow">
+                    <img className="applicationProfileImg" src={videoUrl(a.profile_image_url)} alt={a.player_name} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                    <div className="applicationApproveBox">
+                      <select value={memberRanks[a.id] || "member"} onChange={(e) => setMemberRanks({ ...memberRanks, [a.id]: e.target.value })}>
+                        <option value="member">لاعب عادي</option>
+                        <option value="elite">لاعب نخبة</option>
+                        <option value="co_leader">كو ليدر</option>
+                        <option value="leader">رئيس الكلان</option>
+                      </select>
+                      <button className="mainBtn" onClick={() => approveApplication(a.id)} disabled={a.status === "approved"}>
+                        {a.status === "approved" ? "تمت إضافته" : "قبول وإظهاره بالهرم"}
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="infoGrid">
                     <p><IdCard size={16} /> <b>ID:</b> {a.pubg_id}</p>
                     <p><MessageSquare size={16} /> <b>Discord:</b> {a.discord || "غير محدد"}</p>
@@ -1141,6 +1250,19 @@ function Admin() {
                 </div>
               )}
             </div>
+          </>
+        )}
+
+        {adminTab === "members" && (
+          <>
+            <div className="adminTop">
+              <div>
+                <h1>التحكم بأعضاء الكلان</h1>
+                <p>الأعضاء المقبولين يظهرون في صفحة أعضاء الكلان على شكل هرم حسب الرتبة.</p>
+              </div>
+            </div>
+
+            <ClanMembersHierarchy members={clanMembers} adminMode onRankChange={updateClanMemberRank} onRemove={removeClanMember} />
           </>
         )}
 
@@ -1287,6 +1409,114 @@ function Admin() {
   );
 }
 
+
+const rankLabels = {
+  leader: "رئيس الكلان",
+  co_leader: "كو ليدر",
+  elite: "لاعب نخبة",
+  member: "لاعب عادي",
+};
+
+const rankOrder = ["leader", "co_leader", "elite", "member"];
+
+function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemove }) {
+  const grouped = rankOrder.map((rank) => ({
+    rank,
+    label: rankLabels[rank],
+    items: members.filter((m) => (m.clan_rank || "member") === rank),
+  }));
+
+  return (
+    <div className="clanPyramid">
+      {grouped.map((group, index) => (
+        <div className={`pyramidLevel level-${index + 1}`} key={group.rank}>
+          <div className="pyramidLevelTitle">
+            <Crown size={18} />
+            <span>{group.label}</span>
+          </div>
+
+          <div className="pyramidMembers">
+            {group.items.length ? group.items.map((member) => (
+              <div className="memberCard" key={member.id}>
+                <div className="memberAvatarRing">
+                  {member.profile_image_url ? (
+                    <img src={videoUrl(member.profile_image_url)} alt={member.player_name} />
+                  ) : (
+                    <Users />
+                  )}
+                </div>
+
+                <h3>{member.player_name}</h3>
+                <span className="memberRank">{member.clan_title || group.label}</span>
+
+                <div className="memberMiniGrid">
+                  <p><IdCard size={14} /> {member.pubg_id || "بدون ID"}</p>
+                  <p><Monitor size={14} /> {member.device || "غير محدد"}</p>
+                  <p><Eye size={14} /> {member.fps || "غير محدد"}</p>
+                  <p><Sword size={14} /> {member.game_role || "غير محدد"}</p>
+                </div>
+
+                {adminMode && (
+                  <div className="memberAdminControls">
+                    <select value={member.clan_rank || "member"} onChange={(e) => onRankChange(member.id, e.target.value)}>
+                      <option value="member">لاعب عادي</option>
+                      <option value="elite">لاعب نخبة</option>
+                      <option value="co_leader">كو ليدر</option>
+                      <option value="leader">رئيس الكلان</option>
+                    </select>
+                    <button className="dangerBtn" onClick={() => onRemove(member.id)}>إزالة</button>
+                  </div>
+                )}
+              </div>
+            )) : (
+              <div className="emptyPyramidSlot">لا يوجد أعضاء في هذا المستوى حالياً</div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ClanMembersPage() {
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    async function loadMembers() {
+      try {
+        const res = await fetch(`${API}/api/clan-members`);
+        const json = await res.json();
+        if (alive) setMembers(Array.isArray(json) ? json : []);
+      } catch {
+        if (alive) setMembers([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+    loadMembers();
+    return () => { alive = false; };
+  }, []);
+
+  return (
+    <>
+      <BrandAssets />
+      <Navbar />
+      <section className="membersHero">
+        <div className="heroBadge"><Crown size={22} /> RNM CLAN MEMBERS</div>
+        <h1>أعضاء الكلان<span>HIERARCHY</span></h1>
+        <p>هرم RNM الرسمي: الرئيس، الكو ليدر، لاعبي النخبة، ثم اللاعبين العاديين.</p>
+      </section>
+
+      <section className="section membersSection">
+        {loading ? <div className="emptyState">جاري تحميل أعضاء الكلان...</div> : <ClanMembersHierarchy members={members} />}
+      </section>
+      <Footer />
+    </>
+  );
+}
+
 function Footer() {
   return (
     <footer className="siteFooter">
@@ -1315,6 +1545,7 @@ function App() {
   const cleanPath = path.replace(/\/+$/, "") || "/";
 
   if (cleanPath === "/admin") return <Admin />;
+  if (cleanPath === "/members") return <ClanMembersPage />;
   return <Home />;
 }
 

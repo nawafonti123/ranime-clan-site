@@ -2544,3 +2544,285 @@ textarea {
     grid-column: span 1;
   }
 }
+
+/* CLAN MEMBERS PAGE + ADMIN MEMBERS CONTROL */
+.navLinks button.active,
+.adminSide button.active {
+  border-color: rgba(255, 0, 0, 0.85);
+  background: linear-gradient(135deg, rgba(255, 0, 0, 0.24), rgba(70, 0, 0, 0.45));
+  box-shadow: 0 0 24px rgba(255, 0, 0, 0.24);
+}
+
+select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(255, 0, 0, 0.35);
+  border-radius: 16px;
+  padding: 0 14px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.72);
+  outline: none;
+  font-family: inherit;
+}
+
+select option {
+  background: #120000;
+  color: #fff;
+}
+
+.profileUploadBox {
+  background:
+    radial-gradient(circle at center, rgba(255, 0, 0, 0.14), transparent 55%),
+    rgba(255, 0, 0, 0.045);
+}
+
+.applicationPreviewRow {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 16px;
+  align-items: center;
+  margin: 20px 0 6px;
+}
+
+.applicationProfileImg {
+  width: 110px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 0, 0, 0.45);
+  background: #050505;
+  box-shadow: 0 0 25px rgba(255, 0, 0, 0.18);
+}
+
+.applicationApproveBox {
+  display: grid;
+  gap: 12px;
+}
+
+.membersHero {
+  min-height: 70vh;
+  padding: 150px 7% 70px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 0, 0, 0.25), transparent 35%),
+    linear-gradient(145deg, #050000, #120000 45%, #030303);
+}
+
+.membersHero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 0, 0, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06) 1px, transparent 1px);
+  background-size: 70px 70px;
+  opacity: 0.75;
+}
+
+.membersHero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.membersHero h1 {
+  margin: 22px 0 8px;
+}
+
+.membersHero p {
+  max-width: 850px;
+  color: #d7d7d7;
+  font-size: 22px;
+  line-height: 2;
+}
+
+.clanPyramid {
+  display: grid;
+  gap: 34px;
+}
+
+.pyramidLevel {
+  position: relative;
+  padding: 28px;
+  border-radius: 34px;
+  border: 1px solid rgba(255, 0, 0, 0.28);
+  background:
+    radial-gradient(circle at top, rgba(255, 0, 0, 0.16), transparent 46%),
+    linear-gradient(145deg, rgba(255, 0, 0, 0.08), rgba(255, 255, 255, 0.035));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 20px 60px rgba(0, 0, 0, 0.32);
+}
+
+.level-1 { width: min(460px, 100%); margin: auto; }
+.level-2 { width: min(760px, 100%); margin: auto; }
+.level-3 { width: min(1010px, 100%); margin: auto; }
+.level-4 { width: 100%; }
+
+.pyramidLevelTitle {
+  width: fit-content;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  color: #ff3030;
+  font-weight: 900;
+  background: rgba(255, 0, 0, 0.09);
+  border: 1px solid rgba(255, 0, 0, 0.35);
+}
+
+.pyramidMembers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+  justify-content: center;
+}
+
+.memberCard {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 24px 18px;
+  border-radius: 28px;
+  background: rgba(3, 3, 3, 0.66);
+  border: 1px solid rgba(255, 0, 0, 0.24);
+  box-shadow: 0 16px 45px rgba(0,0,0,.28);
+}
+
+.memberCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 18%;
+  left: 18%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 0, 0, 0.95), transparent);
+}
+
+.memberAvatarRing {
+  width: 118px;
+  height: 118px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 0, 0, 0.48);
+  background: radial-gradient(circle, rgba(255,0,0,.22), rgba(0,0,0,.85));
+  box-shadow: 0 0 32px rgba(255,0,0,.24), inset 0 0 24px rgba(255,0,0,.18);
+  overflow: hidden;
+}
+
+.memberAvatarRing img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.memberAvatarRing svg {
+  color: #ff3030;
+  width: 48px;
+  height: 48px;
+}
+
+.memberCard h3 {
+  margin: 8px 0 5px;
+  font-size: 25px;
+}
+
+.memberRank {
+  display: inline-flex;
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: #ff3131;
+  font-weight: 900;
+  background: rgba(255, 0, 0, 0.09);
+  border: 1px solid rgba(255, 0, 0, 0.28);
+}
+
+.memberMiniGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.memberMiniGrid p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  min-height: 38px;
+  padding: 8px;
+  border-radius: 12px;
+  color: #d4d4d4;
+  background: rgba(255,255,255,.045);
+  font-size: 13px;
+}
+
+.memberMiniGrid svg {
+  color: #ff3030;
+}
+
+.memberAdminControls {
+  display: grid;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.emptyPyramidSlot {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 26px;
+  color: #aaa;
+  border-radius: 22px;
+  border: 1px dashed rgba(255, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.dangerBtn,
+.dangerIconBtn {
+  border: 1px solid rgba(255, 0, 0, 0.45);
+  background: rgba(150, 0, 0, 0.22);
+  color: #fff;
+  border-radius: 14px;
+  padding: 12px 18px;
+  cursor: pointer;
+}
+
+.dangerIconBtn {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+@media (max-width: 760px) {
+  .applicationPreviewRow {
+    grid-template-columns: 1fr;
+  }
+
+  .applicationProfileImg {
+    margin: auto;
+  }
+
+  .membersHero {
+    padding: 125px 22px 55px;
+  }
+
+  .membersHero p {
+    font-size: 17px;
+  }
+
+  .pyramidLevel {
+    padding: 20px;
+  }
+
+  .memberMiniGrid {
+    grid-template-columns: 1fr;
+  }
+}
