@@ -1223,3 +1223,255 @@ footer,
   }
 
 }
+
+
+/* DYNAMIC MEDIA / DESIGNS */
+
+.mediaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 30px;
+  width: 100%;
+}
+
+.mediaCard {
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 0, 0, 0.25);
+  background: rgba(15, 15, 15, 0.95);
+  box-shadow: 0 0 40px rgba(255, 0, 0, 0.18);
+  transition: 0.35s;
+}
+
+.mediaCard:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 0 60px rgba(255, 0, 0, 0.35);
+}
+
+.mediaVideoWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  background: #000;
+  overflow: hidden;
+}
+
+.mediaVideoWrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mediaPlayLayer {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0.15));
+}
+
+.mediaPlayLayer span {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255,0,0,0.18);
+  border: 2px solid rgba(255,255,255,0.25);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 35px rgba(255,0,0,0.4);
+}
+
+.mediaLabel {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(255,0,0,0.16);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,0,0,0.25);
+}
+
+.mediaInfo {
+  padding: 24px;
+}
+
+.mediaInfo h3 {
+  color: #fff;
+  font-size: 24px;
+  margin: 0 0 12px;
+  font-weight: 900;
+}
+
+.mediaInfo p {
+  color: rgba(255,255,255,0.72);
+  line-height: 1.8;
+  font-size: 15px;
+  margin: 0;
+}
+
+.fallbackNotice {
+  margin: 18px auto 0;
+  width: fit-content;
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: #ffd9d9;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.28);
+}
+
+.videoModal {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.videoModalBox {
+  width: 100%;
+  max-width: 1400px;
+  border-radius: 30px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255,0,0,0.25);
+  box-shadow: 0 0 80px rgba(255,0,0,0.25);
+  background: #000;
+}
+
+.videoModalBox video {
+  width: 100%;
+  max-height: 90vh;
+  background: #000;
+}
+
+.modalCloseBtn {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 10;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,0,0,0.22);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+
+.requestVideoSection {
+  padding: 30px 0 5px;
+}
+
+.requestVideoForm {
+  width: min(920px, 100%);
+  margin: auto;
+}
+
+.adminVideoForm {
+  margin-bottom: 28px;
+}
+
+.adminActionsRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.dangerBtn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 52px;
+  padding: 13px 30px;
+  border-radius: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1px solid rgba(255, 0, 0, 0.55);
+  color: #fff;
+  background: linear-gradient(135deg, #7b0000, #230000);
+  box-shadow: 0 0 22px rgba(255, 0, 0, 0.22);
+}
+
+.dangerIconBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 0, 0, 0.55);
+  background: rgba(255, 0, 0, 0.12);
+  color: #ff2a2a;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.dangerIconBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.statusPill {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 7px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.statusPill.pending {
+  color: #ffd37b;
+  background: rgba(255, 180, 0, 0.12);
+  border-color: rgba(255, 180, 0, 0.22);
+}
+
+.statusPill.approved {
+  color: #8dff9f;
+  background: rgba(0, 255, 80, 0.09);
+  border-color: rgba(0, 255, 80, 0.22);
+}
+
+.statusPill.rejected {
+  color: #ff8d8d;
+  background: rgba(255, 0, 0, 0.09);
+  border-color: rgba(255, 0, 0, 0.22);
+}
+
+.adminMediaList .adminCard video {
+  max-height: 430px;
+}
+
+@media (max-width: 760px) {
+  .mediaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .mediaPlayLayer span {
+    width: 74px;
+    height: 74px;
+  }
+
+  .adminActionsRow .mainBtn,
+  .adminActionsRow .ghostBtn,
+  .adminActionsRow .dangerBtn {
+    width: 100%;
+  }
+}

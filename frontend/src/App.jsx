@@ -49,6 +49,20 @@ function useRoute() {
 }
 
 
+
+function videoUrl(src) {
+  if (!src) return "";
+  return src.startsWith("http") ? src : `${API}${src}`;
+}
+
+function fallbackMainVideos() {
+  return [
+    { id: "fallback-1", title: "أداء الأعضاء", description: "فيديو احتياطي يظهر عند تعطل الباك اند", src: clanVideo1, label: "VIDEO 1", fallback: true },
+    { id: "fallback-2", title: "أداء الأعضاء", description: "فيديو احتياطي يظهر عند تعطل الباك اند", src: clanVideo2, label: "VIDEO 2", fallback: true },
+    { id: "fallback-3", title: "أداء الأعضاء", description: "فيديو احتياطي يظهر عند تعطل الباك اند", src: clanVideo3, label: "VIDEO 3", fallback: true },
+  ];
+}
+
 function BrandAssets() {
   useEffect(() => {
     let favicon = document.querySelector('link[rel="icon"]');
@@ -263,6 +277,7 @@ function Home() {
       <ClanInfo />
       <Identity />
       <Videos />
+      <VideoRequestSection />
       <ApplySection
         form={form}
         setForm={setForm}
@@ -451,12 +466,83 @@ function Identity() {
 
 function Videos() {
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [videos, setVideos] = useState(fallbackMainVideos());
+  const [designs, setDesigns] = useState([]);
+  const [usingFallback, setUsingFallback] = useState(false);
 
-  const videos = [
-    { title: "أداء الأعضاء", src: clanVideo1, label: "VIDEO 1" },
-    { title: "أداء الأعضاء", src: clanVideo2, label: "VIDEO 2" },
-    { title: "أداء الأعضاء", src: clanVideo3, label: "VIDEO 3" },
-  ];
+  useEffect(() => {
+    let alive = true;
+
+    async function loadSiteVideos() {
+      try {
+        const res = await fetch(`${API}/api/site-videos`);
+        if (!res.ok) throw new Error("backend");
+        const json = await res.json();
+
+        if (!alive) return;
+
+        const mapped = (Array.isArray(json) ? json : []).map((item, index) => ({
+          id: item.id,
+          title: item.title || "فيديو RNM",
+          description: item.description || "فيديو من إدارة الكلان",
+          src: videoUrl(item.video_url),
+          label: item.slot && item.slot >= 99 ? "DESIGN" : `VIDEO ${item.slot || index + 1}`,
+          slot: item.slot || index + 1,
+          fallback: false,
+        }));
+
+        const mainVideos = mapped.filter((v) => (v.slot || 1) < 99);
+        const designVideos = mapped.filter((v) => (v.slot || 1) >= 99);
+
+        setVideos(mainVideos.length ? mainVideos : fallbackMainVideos());
+        setDesigns(designVideos);
+        setUsingFallback(!mainVideos.length);
+      } catch {
+        if (!alive) return;
+        setVideos(fallbackMainVideos());
+        setDesigns([]);
+        setUsingFallback(true);
+      }
+    }
+
+    loadSiteVideos();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  function renderVideoCard(item, index) {
+    return (
+      <div className="mediaCard" key={`${item.id}-${index}`}>
+        <div className="mediaVideoWrap">
+          <video
+            src={item.src}
+            muted
+            playsInline
+            preload="metadata"
+            onError={(e) => {
+              if (!item.fallback && videos[index]) {
+                e.currentTarget.src = fallbackMainVideos()[index % 3].src;
+              }
+            }}
+          />
+
+          <button className="mediaPlayLayer" onClick={() => setSelectedVideo(item)}>
+            <span>
+              <Video size={42} color="#fff" />
+            </span>
+          </button>
+
+          <div className="mediaLabel">{item.label}</div>
+        </div>
+
+        <div className="mediaInfo">
+          <h3>{item.title}</h3>
+          <p>{item.description || "فيديو يوضح أداء وإبداع أعضاء الكلان."}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -465,203 +551,156 @@ function Videos() {
           <span>CLAN MEDIA</span>
           <h2>فيديوهات الكلان</h2>
           <p>
-            أقوى لقطات RNM بجودة احترافية وتجربة مشاهدة سينمائية.
+            الإدارة تقدر تغيّر هذه الفيديوهات من لوحة التحكم. وإذا تعطل الباك اند تظهر الفيديوهات الأصلية تلقائياً.
           </p>
+          {usingFallback && (
+            <div className="fallbackNotice">
+              يتم عرض الفيديوهات الاحتياطية حالياً.
+            </div>
+          )}
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
-            gap: "30px",
-            width: "100%",
-          }}
-        >
-          {videos.map((item, index) => (
-            <div
-              key={index}
-              style={{
-                position: "relative",
-                borderRadius: "28px",
-                overflow: "hidden",
-                border: "1px solid rgba(255,0,0,0.25)",
-                background: "rgba(15,15,15,0.95)",
-                boxShadow: "0 0 40px rgba(255,0,0,0.18)",
-                transition: "0.35s",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-8px) scale(1.02)";
-                e.currentTarget.style.boxShadow =
-                  "0 0 60px rgba(255,0,0,0.35)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0px) scale(1)";
-                e.currentTarget.style.boxShadow =
-                  "0 0 40px rgba(255,0,0,0.18)";
-              }}
-            >
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  aspectRatio: "9/16",
-                  background: "#000",
-                  overflow: "hidden",
-                }}
-              >
-                <video
-                  src={item.src}
-                  muted
-                  playsInline
-                  preload="metadata"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-
-                <div
-                  onClick={() => setSelectedVideo(item)}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background:
-                      "linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0.15))",
-                    transition: "0.3s",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 90,
-                      height: 90,
-                      borderRadius: "50%",
-                      background: "rgba(255,0,0,0.18)",
-                      border: "2px solid rgba(255,255,255,0.25)",
-                      backdropFilter: "blur(10px)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: "0 0 35px rgba(255,0,0,0.4)",
-                    }}
-                  >
-                    <Video size={42} color="#fff" />
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 18,
-                    right: 18,
-                    background: "rgba(255,0,0,0.16)",
-                    color: "#fff",
-                    padding: "8px 14px",
-                    borderRadius: "999px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid rgba(255,0,0,0.25)",
-                  }}
-                >
-                  {item.label}
-                </div>
-              </div>
-
-              <div style={{ padding: 24 }}>
-                <h3
-                  style={{
-                    color: "#fff",
-                    fontSize: 24,
-                    marginBottom: 12,
-                    fontWeight: 800,
-                  }}
-                >
-                  {item.title}
-                </h3>
-
-                <p
-                  style={{
-                    color: "rgba(255,255,255,0.72)",
-                    lineHeight: 1.8,
-                    fontSize: 15,
-                  }}
-                >
-                  فيديو يوضح اداء اعضاء الكلان بشكل دقيق 
-                </p>
-              </div>
-            </div>
-          ))}
+        <div className="mediaGrid">
+          {videos.map(renderVideoCard)}
         </div>
       </section>
 
+      <section className="section" id="designs">
+        <div className="sectionHead">
+          <span>RNM DESIGNS</span>
+          <h2>قسم التصاميم</h2>
+          <p>
+            الفيديوهات المقبولة من الإدارة تظهر هنا كتصاميم وإبداعات خاصة بالكلان.
+          </p>
+        </div>
+
+        {designs.length ? (
+          <div className="mediaGrid">
+            {designs.map(renderVideoCard)}
+          </div>
+        ) : (
+          <div className="emptyState">لا توجد تصاميم منشورة حالياً.</div>
+        )}
+      </section>
+
       {selectedVideo && (
-        <div
-          onClick={() => setSelectedVideo(null)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 99999,
-            background: "rgba(0,0,0,0.92)",
-            backdropFilter: "blur(12px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 20,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "100%",
-              maxWidth: 1400,
-              borderRadius: 30,
-              overflow: "hidden",
-              position: "relative",
-              border: "1px solid rgba(255,0,0,0.25)",
-              boxShadow: "0 0 80px rgba(255,0,0,0.25)",
-              background: "#000",
-            }}
-          >
-            <button
-              onClick={() => setSelectedVideo(null)}
-              style={{
-                position: "absolute",
-                top: 18,
-                left: 18,
-                zIndex: 10,
-                width: 48,
-                height: 48,
-                borderRadius: "50%",
-                border: "none",
-                background: "rgba(255,0,0,0.22)",
-                color: "#fff",
-                fontSize: 22,
-                cursor: "pointer",
-                backdropFilter: "blur(12px)",
-              }}
-            >
+        <div className="videoModal" onClick={() => setSelectedVideo(null)}>
+          <div className="videoModalBox" onClick={(e) => e.stopPropagation()}>
+            <button className="modalCloseBtn" onClick={() => setSelectedVideo(null)}>
               ✕
             </button>
 
-            <video
-              src={selectedVideo.src}
-              controls
-              autoPlay
-              style={{
-                width: "100%",
-                maxHeight: "90vh",
-                background: "#000",
-              }}
-            />
+            <video src={selectedVideo.src} controls autoPlay />
           </div>
         </div>
       )}
     </>
+  );
+}
+
+function VideoRequestSection() {
+  const [form, setForm] = useState({
+    visitor_name: "",
+    contact: "",
+    title: "",
+    description: "",
+  });
+  const [videoFile, setVideoFile] = useState(null);
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  function update(e) {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  }
+
+  async function submitVideoRequest(e) {
+    e.preventDefault();
+
+    if (!videoFile) {
+      setMessage("اختر فيديو التصميم أولاً");
+      return;
+    }
+
+    const data = new FormData();
+    Object.entries(form).forEach(([key, value]) => data.append(key, value));
+    data.append("video", videoFile);
+
+    setSending(true);
+    setMessage("جاري إرسال الفيديو للإدارة...");
+
+    try {
+      const res = await fetch(`${API}/api/video-requests`, {
+        method: "POST",
+        body: data,
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        setMessage(json.message || json.detail || "فشل إرسال الفيديو");
+        return;
+      }
+
+      setMessage(json.message || "تم إرسال طلب الفيديو للإدارة");
+      setForm({ visitor_name: "", contact: "", title: "", description: "" });
+      setVideoFile(null);
+      e.currentTarget.reset();
+    } catch {
+      setMessage("حدث خطأ أثناء إرسال الفيديو");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <section className="section requestVideoSection" id="request-video">
+      <div className="sectionHead">
+        <span>SUBMIT DESIGN</span>
+        <h2>ارفع تصميمك للإدارة</h2>
+        <p>
+          الزائر يقدر يرفع فيديو تصميم أو لقطة، وبعد قبول الإدارة يظهر في قسم التصاميم.
+        </p>
+      </div>
+
+      <form className="form requestVideoForm" onSubmit={submitVideoRequest}>
+        <div className="inputGroup">
+          <input name="visitor_name" placeholder="اسمك" value={form.visitor_name} onChange={update} required />
+        </div>
+
+        <div className="inputGroup">
+          <input name="contact" placeholder="وسيلة تواصل Discord / Instagram" value={form.contact} onChange={update} />
+        </div>
+
+        <div className="inputGroup">
+          <input name="title" placeholder="عنوان الفيديو أو التصميم" value={form.title} onChange={update} required />
+        </div>
+
+        <textarea
+          name="description"
+          placeholder="وصف بسيط عن الفيديو"
+          value={form.description}
+          onChange={update}
+        />
+
+        <label className="uploadBox">
+          <Upload />
+          <b>{videoFile ? videoFile.name : "ارفع فيديو التصميم"}</b>
+          <span>بعد القبول يظهر في قسم التصاميم</span>
+          <input type="file" accept="video/*" hidden onChange={(e) => setVideoFile(e.target.files[0])} />
+        </label>
+
+        <button className="mainBtn submitBtn" type="submit" disabled={sending}>
+          {sending ? "جاري الإرسال..." : "إرسال الفيديو للإدارة"}
+        </button>
+
+        {message && (
+          <div className="successMsg">
+            <CheckCircle size={20} />
+            {message}
+          </div>
+        )}
+      </form>
+    </section>
   );
 }
 
@@ -750,19 +789,54 @@ function ApplySection({ form, setForm, video, setVideo, submit, message, loading
 
 function Admin() {
   const [apps, setApps] = useState([]);
+  const [siteVideos, setSiteVideos] = useState([]);
+  const [videoRequests, setVideoRequests] = useState([]);
   const [password, setPassword] = useState("");
   const [allowed, setAllowed] = useState(false);
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const [videoForm, setVideoForm] = useState({
+    id: null,
+    title: "",
+    description: "",
+    slot: 1,
+    file: null,
+  });
+  const [savingVideo, setSavingVideo] = useState(false);
+  const [adminTab, setAdminTab] = useState("applications");
 
   useEffect(() => {
-    if (allowed) loadApps();
+    if (allowed) loadAdminData();
   }, [allowed]);
+
+  async function loadAdminData() {
+    await Promise.all([loadApps(), loadSiteVideos(), loadVideoRequests()]);
+  }
 
   async function loadApps() {
     const res = await fetch(`${API}/api/applications`);
     const json = await res.json();
-    setApps(json);
+    setApps(Array.isArray(json) ? json : []);
+  }
+
+  async function loadSiteVideos() {
+    try {
+      const res = await fetch(`${API}/api/site-videos`);
+      const json = await res.json();
+      setSiteVideos(Array.isArray(json) ? json : []);
+    } catch {
+      setSiteVideos([]);
+    }
+  }
+
+  async function loadVideoRequests() {
+    try {
+      const res = await fetch(`${API}/api/video-requests`);
+      const json = await res.json();
+      setVideoRequests(Array.isArray(json) ? json : []);
+    } catch {
+      setVideoRequests([]);
+    }
   }
 
   async function deleteApplication(id, playerName) {
@@ -791,6 +865,104 @@ function Admin() {
     }
   }
 
+  async function saveSiteVideo(e) {
+    e.preventDefault();
+
+    if (!videoForm.id && !videoForm.file) {
+      alert("اختر ملف فيديو أولاً");
+      return;
+    }
+
+    const data = new FormData();
+    data.append("title", videoForm.title || "فيديو RNM");
+    data.append("description", videoForm.description || "");
+    data.append("slot", String(videoForm.slot || 1));
+    if (videoForm.file) data.append("video", videoForm.file);
+
+    setSavingVideo(true);
+
+    try {
+      const url = videoForm.id
+        ? `${API}/api/site-videos/${videoForm.id}`
+        : `${API}/api/site-videos`;
+
+      const res = await fetch(url, {
+        method: videoForm.id ? "PUT" : "POST",
+        body: data,
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل حفظ الفيديو");
+        return;
+      }
+
+      setVideoForm({ id: null, title: "", description: "", slot: 1, file: null });
+      await loadSiteVideos();
+      alert(json.message || "تم حفظ الفيديو");
+    } catch {
+      alert("حدث خطأ أثناء حفظ الفيديو");
+    } finally {
+      setSavingVideo(false);
+    }
+  }
+
+  function editSiteVideo(item) {
+    setAdminTab("videos");
+    setVideoForm({
+      id: item.id,
+      title: item.title || "",
+      description: item.description || "",
+      slot: item.slot || 1,
+      file: null,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function deleteSiteVideo(id) {
+    const ok = window.confirm("هل تريد حذف هذا الفيديو من الموقع؟");
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`${API}/api/site-videos/${id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل حذف الفيديو");
+        return;
+      }
+
+      setSiteVideos((prev) => prev.filter((item) => item.id !== id));
+    } catch {
+      alert("حدث خطأ أثناء حذف الفيديو");
+    }
+  }
+
+  async function reviewVideoRequest(id, action) {
+    const ok = window.confirm(action === "approve" ? "قبول الفيديو ونشره؟" : "رفض الفيديو؟");
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`${API}/api/video-requests/${id}/${action}`, {
+        method: "POST",
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل تنفيذ العملية");
+        return;
+      }
+
+      await Promise.all([loadVideoRequests(), loadSiteVideos()]);
+      alert(json.message || "تم تنفيذ العملية");
+    } catch {
+      alert("حدث خطأ أثناء مراجعة الفيديو");
+    }
+  }
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return apps;
@@ -811,7 +983,7 @@ function Admin() {
             <img className="rnmLogoImg adminLoginLogoImg" src={logo} alt="RNM ADMIN" />
           </div>
           <h1>لوحة إدارة RNM</h1>
-          <p>الدخول مخصص للإدارة فقط لمراجعة طلبات الانضمام.</p>
+          <p>الدخول مخصص للإدارة فقط لمراجعة طلبات الانضمام وإدارة فيديوهات الموقع.</p>
 
           <input
             type="password"
@@ -850,86 +1022,216 @@ function Admin() {
           <span>ADMIN PANEL</span>
         </div>
 
-        <button onClick={loadApps}>تحديث الطلبات</button>
+        <button onClick={() => setAdminTab("applications")}>طلبات التقديم</button>
+        <button onClick={() => setAdminTab("videos")}>إدارة فيديوهات الموقع</button>
+        <button onClick={() => setAdminTab("requests")}>طلبات التصاميم</button>
+        <button onClick={loadAdminData}>تحديث الكل</button>
         <button onClick={() => go("/")}>فتح الموقع</button>
 
         <div className="sideStat">
           <b>{apps.length}</b>
-          <span>إجمالي الطلبات</span>
+          <span>إجمالي طلبات الانضمام</span>
+        </div>
+        <div className="sideStat">
+          <b>{videoRequests.filter((r) => r.status === "pending").length}</b>
+          <span>طلبات فيديو بانتظار المراجعة</span>
         </div>
       </aside>
 
       <section className="adminContent">
-        <div className="adminTop">
-          <div>
-            <h1>طلبات التقديم</h1>
-            <p>كل اللاعبين الذين قدموا على الكلان مع فيديو الأداء.</p>
-          </div>
-
-          <div className="searchBox">
-            <Search />
-            <input
-              placeholder="بحث بالاسم أو ID أو الدور..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="adminList">
-          {filtered.map((a) => (
-            <div className="adminCard" key={a.id}>
-              <div className="adminCardHead">
-                <div>
-                  <h3>{a.player_name}</h3>
-                  <span>Application #{a.id}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <button
-                    type="button"
-                    onClick={() => deleteApplication(a.id, a.player_name)}
-                    disabled={deletingId === a.id}
-                    title="حذف الطلب"
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 14,
-                      border: "1px solid rgba(255, 0, 0, 0.55)",
-                      background: "rgba(255, 0, 0, 0.12)",
-                      color: "#ff2a2a",
-                      display: "grid",
-                      placeItems: "center",
-                      cursor: deletingId === a.id ? "not-allowed" : "pointer",
-                      opacity: deletingId === a.id ? 0.55 : 1,
-                    }}
-                  >
-                    <Trash2 size={19} />
-                  </button>
-                  <Trophy />
-                </div>
+        {adminTab === "applications" && (
+          <>
+            <div className="adminTop">
+              <div>
+                <h1>طلبات التقديم</h1>
+                <p>كل اللاعبين الذين قدموا على الكلان مع فيديو الأداء.</p>
               </div>
 
-              <div className="infoGrid">
-                <p><IdCard size={16} /> <b>ID:</b> {a.pubg_id}</p>
-                <p><MessageSquare size={16} /> <b>Discord:</b> {a.discord || "غير محدد"}</p>
-                <p><Monitor size={16} /> <b>Device:</b> {a.device || "غير محدد"}</p>
-                <p><Eye size={16} /> <b>FPS:</b> {a.fps || "غير محدد"}</p>
-                <p><Sword size={16} /> <b>Role:</b> {a.role || "غير محدد"}</p>
-                <p><Calendar size={16} /> <b>Date:</b> {new Date(a.created_at).toLocaleString("ar")}</p>
+              <div className="searchBox">
+                <Search />
+                <input
+                  placeholder="بحث بالاسم أو ID أو الدور..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="adminList">
+              {filtered.map((a) => (
+                <div className="adminCard" key={a.id}>
+                  <div className="adminCardHead">
+                    <div>
+                      <h3>{a.player_name}</h3>
+                      <span>Application #{a.id}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <button
+                        type="button"
+                        onClick={() => deleteApplication(a.id, a.player_name)}
+                        disabled={deletingId === a.id}
+                        title="حذف الطلب"
+                        className="dangerIconBtn"
+                      >
+                        <Trash2 size={19} />
+                      </button>
+                      <Trophy />
+                    </div>
+                  </div>
+
+                  <div className="infoGrid">
+                    <p><IdCard size={16} /> <b>ID:</b> {a.pubg_id}</p>
+                    <p><MessageSquare size={16} /> <b>Discord:</b> {a.discord || "غير محدد"}</p>
+                    <p><Monitor size={16} /> <b>Device:</b> {a.device || "غير محدد"}</p>
+                    <p><Eye size={16} /> <b>FPS:</b> {a.fps || "غير محدد"}</p>
+                    <p><Sword size={16} /> <b>Role:</b> {a.role || "غير محدد"}</p>
+                    <p><Calendar size={16} /> <b>Date:</b> {new Date(a.created_at).toLocaleString("ar")}</p>
+                  </div>
+
+                  <p className="desc">{a.description || "لا يوجد وصف"}</p>
+
+                  <video controls src={a.video_url?.startsWith("http") ? a.video_url : `${API}${a.video_url}`} />
+                </div>
+              ))}
+
+              {filtered.length === 0 && (
+                <div className="emptyState">
+                  لا توجد طلبات مطابقة.
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {adminTab === "videos" && (
+          <>
+            <div className="adminTop">
+              <div>
+                <h1>إدارة الفيديوهات</h1>
+                <p>غيّر فيديوهات قسم الكلان. اترك Slot من 1 إلى 3 للفيديوهات الرئيسية، واستخدم 99 للتصاميم.</p>
+              </div>
+            </div>
+
+            <form className="form adminVideoForm" onSubmit={saveSiteVideo}>
+              <div className="inputGroup">
+                <input
+                  placeholder="عنوان الفيديو"
+                  value={videoForm.title}
+                  onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
+                  required
+                />
               </div>
 
-              <p className="desc">{a.description || "لا يوجد وصف"}</p>
+              <div className="inputGroup">
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Slot رقم الظهور"
+                  value={videoForm.slot}
+                  onChange={(e) => setVideoForm({ ...videoForm, slot: Number(e.target.value) })}
+                />
+              </div>
 
-              <video controls src={a.video_url?.startsWith("http") ? a.video_url : `${API}${a.video_url}`} />
-            </div>
-          ))}
+              <textarea
+                placeholder="وصف الفيديو"
+                value={videoForm.description}
+                onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
+              />
 
-          {filtered.length === 0 && (
-            <div className="emptyState">
-              لا توجد طلبات مطابقة.
+              <label className="uploadBox">
+                <Upload />
+                <b>{videoForm.file ? videoForm.file.name : videoForm.id ? "اختياري: اختر فيديو جديد للتبديل" : "اختر فيديو للموقع"}</b>
+                <span>MP4 / WEBM / MOV</span>
+                <input type="file" accept="video/*" hidden onChange={(e) => setVideoForm({ ...videoForm, file: e.target.files[0] })} />
+              </label>
+
+              <button className="mainBtn submitBtn" type="submit" disabled={savingVideo}>
+                {savingVideo ? "جاري الحفظ..." : videoForm.id ? "تحديث الفيديو" : "إضافة فيديو"}
+              </button>
+
+              {videoForm.id && (
+                <button
+                  type="button"
+                  className="ghostBtn submitBtn"
+                  onClick={() => setVideoForm({ id: null, title: "", description: "", slot: 1, file: null })}
+                >
+                  إلغاء التعديل
+                </button>
+              )}
+            </form>
+
+            <div className="adminList adminMediaList">
+              {siteVideos.map((v) => (
+                <div className="adminCard" key={v.id}>
+                  <div className="adminCardHead">
+                    <div>
+                      <h3>{v.title}</h3>
+                      <span>Slot #{v.slot}</span>
+                    </div>
+                    <Video />
+                  </div>
+
+                  <p className="desc">{v.description || "لا يوجد وصف"}</p>
+                  <video controls src={videoUrl(v.video_url)} />
+
+                  <div className="adminActionsRow">
+                    <button className="ghostBtn" onClick={() => editSiteVideo(v)}>تعديل</button>
+                    <button className="dangerBtn" onClick={() => deleteSiteVideo(v.id)}>حذف</button>
+                  </div>
+                </div>
+              ))}
+
+              {siteVideos.length === 0 && (
+                <div className="emptyState">لا توجد فيديوهات من الباك اند. سيظهر الاحتياطي تلقائياً بالموقع.</div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
+
+        {adminTab === "requests" && (
+          <>
+            <div className="adminTop">
+              <div>
+                <h1>طلبات إضافة فيديو</h1>
+                <p>اقبل الفيديو ليظهر تلقائياً في قسم التصاميم، أو ارفضه.</p>
+              </div>
+            </div>
+
+            <div className="adminList adminMediaList">
+              {videoRequests.map((r) => (
+                <div className="adminCard" key={r.id}>
+                  <div className="adminCardHead">
+                    <div>
+                      <h3>{r.title}</h3>
+                      <span className={`statusPill ${r.status}`}>{r.status || "pending"}</span>
+                    </div>
+                    <Video />
+                  </div>
+
+                  <div className="infoGrid">
+                    <p><Users size={16} /> <b>المرسل:</b> {r.visitor_name}</p>
+                    <p><MessageSquare size={16} /> <b>تواصل:</b> {r.contact || "غير محدد"}</p>
+                    <p><Calendar size={16} /> <b>Date:</b> {new Date(r.created_at).toLocaleString("ar")}</p>
+                  </div>
+
+                  <p className="desc">{r.description || "لا يوجد وصف"}</p>
+                  <video controls src={videoUrl(r.video_url)} />
+
+                  {r.status === "pending" && (
+                    <div className="adminActionsRow">
+                      <button className="mainBtn" onClick={() => reviewVideoRequest(r.id, "approve")}>قبول ونشر</button>
+                      <button className="dangerBtn" onClick={() => reviewVideoRequest(r.id, "reject")}>رفض</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {videoRequests.length === 0 && (
+                <div className="emptyState">لا توجد طلبات فيديو حالياً.</div>
+              )}
+            </div>
+          </>
+        )}
       </section>
     </main>
     </>
