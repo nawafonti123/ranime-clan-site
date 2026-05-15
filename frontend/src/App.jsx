@@ -168,10 +168,12 @@ function BrandAssets() {
       }
 
       .adminLoginLogoImg {
-        width: 130px;
-        height: 130px;
-        object-fit: contain;
-        filter: drop-shadow(0 0 30px rgba(255, 0, 0, 0.55));
+        width: 78px;
+        height: 78px;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+        filter: drop-shadow(0 0 22px rgba(255, 0, 0, 0.55));
       }
 
       .adminSideLogoImg {
