@@ -2454,3 +2454,93 @@ textarea {
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* CLAN VIDEOS 10 ITEMS GRID FIX */
+.clanVideosGrid,
+.compactMediaGrid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(260px, 340px)) !important;
+  justify-content: center !important;
+  align-items: start !important;
+  gap: 28px !important;
+}
+
+.clanVideosGrid .mediaCard,
+.compactMediaGrid .mediaCard {
+  width: 100% !important;
+  max-width: 340px !important;
+  justify-self: center !important;
+}
+
+.clanVideosGrid.count-1,
+.compactMediaGrid.count-1 {
+  grid-template-columns: minmax(260px, 340px) !important;
+}
+
+.clanVideosGrid.count-2,
+.compactMediaGrid.count-2 {
+  grid-template-columns: repeat(2, minmax(260px, 340px)) !important;
+}
+
+.clanVideosGrid.count-3,
+.compactMediaGrid.count-3,
+.clanVideosGrid.count-4,
+.clanVideosGrid.count-5,
+.clanVideosGrid.count-6,
+.clanVideosGrid.count-7,
+.clanVideosGrid.count-8,
+.clanVideosGrid.count-9,
+.clanVideosGrid.count-10 {
+  grid-template-columns: repeat(3, minmax(260px, 340px)) !important;
+}
+
+.adminFormHint {
+  grid-column: span 2;
+  margin-top: -4px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  color: rgba(255,255,255,0.74);
+  background: rgba(255, 0, 0, 0.055);
+  border: 1px solid rgba(255, 0, 0, 0.18);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .clanVideosGrid,
+  .compactMediaGrid,
+  .clanVideosGrid.count-3,
+  .compactMediaGrid.count-3,
+  .clanVideosGrid.count-4,
+  .clanVideosGrid.count-5,
+  .clanVideosGrid.count-6,
+  .clanVideosGrid.count-7,
+  .clanVideosGrid.count-8,
+  .clanVideosGrid.count-9,
+  .clanVideosGrid.count-10 {
+    grid-template-columns: repeat(2, minmax(250px, 340px)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .clanVideosGrid,
+  .compactMediaGrid,
+  .clanVideosGrid.count-2,
+  .compactMediaGrid.count-2,
+  .clanVideosGrid.count-3,
+  .compactMediaGrid.count-3,
+  .clanVideosGrid.count-4,
+  .clanVideosGrid.count-5,
+  .clanVideosGrid.count-6,
+  .clanVideosGrid.count-7,
+  .clanVideosGrid.count-8,
+  .clanVideosGrid.count-9,
+  .clanVideosGrid.count-10 {
+    grid-template-columns: minmax(240px, 340px) !important;
+  }
+
+  .adminFormHint {
+    grid-column: span 1;
+  }
+}

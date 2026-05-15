@@ -30,6 +30,7 @@ import clanVideo3 from "./VID-3.mp4";
 import logo from "./RNM.png";
 
 const API = import.meta.env.VITE_API_URL || "https://ranime-clan-site.onrender.com";
+const MAX_CLAN_VIDEOS = 10;
 
 function go(path) {
   window.history.pushState({}, "", path);
@@ -492,8 +493,11 @@ function Videos() {
           fallback: false,
         }));
 
-        const mainVideos = mapped.filter((v) => (v.slot || 1) < 99);
-        const designVideos = mapped.filter((v) => (v.slot || 1) >= 99);
+        const sortedMapped = mapped.sort((a, b) => (a.slot || 1) - (b.slot || 1) || String(a.id).localeCompare(String(b.id)));
+        const mainVideos = sortedMapped
+          .filter((v) => (v.slot || 1) < 99)
+          .slice(0, MAX_CLAN_VIDEOS);
+        const designVideos = sortedMapped.filter((v) => (v.slot || 1) >= 99);
 
         setVideos(mainVideos.length ? mainVideos : fallbackMainVideos());
         setDesigns(designVideos);
@@ -552,7 +556,7 @@ function Videos() {
           <span>CLAN MEDIA</span>
           <h2>فيديوهات الكلان</h2>
           <p>
-            الإدارة تقدر تغيّر هذه الفيديوهات من لوحة التحكم. وإذا تعطل الباك اند تظهر الفيديوهات الأصلية تلقائياً.
+            الإدارة تقدر تضيف حتى 10 فيديوهات للكلان بنفس الترتيب، 3 فيديوهات في كل سطر. وإذا تعطل الباك اند تظهر الفيديوهات الأصلية تلقائياً.
           </p>
           {usingFallback && (
             <div className="fallbackNotice">
@@ -561,7 +565,7 @@ function Videos() {
           )}
         </div>
 
-        <div className={`mediaGrid compactMediaGrid count-${Math.min(videos.length, 3)}`}>
+        <div className={`mediaGrid compactMediaGrid clanVideosGrid count-${Math.min(videos.length, MAX_CLAN_VIDEOS)}`}>
           {videos.map(renderVideoCard)}
         </div>
       </section>
@@ -1145,7 +1149,7 @@ function Admin() {
             <div className="adminTop">
               <div>
                 <h1>إدارة الفيديوهات</h1>
-                <p>غيّر فيديوهات قسم الكلان. اترك Slot من 1 إلى 3 للفيديوهات الرئيسية، واستخدم 99 للتصاميم.</p>
+                <p>غيّر فيديوهات قسم الكلان. استخدم Slot من 1 إلى 10 للفيديوهات الرئيسية بنفس ترتيب الظهور، واستخدم 99 للتصاميم.</p>
               </div>
             </div>
 
@@ -1163,10 +1167,15 @@ function Admin() {
                 <input
                   type="number"
                   min="1"
-                  placeholder="Slot رقم الظهور"
+                  max="99"
+                  placeholder="Slot رقم الظهور 1-10 أو 99 للتصاميم"
                   value={videoForm.slot}
                   onChange={(e) => setVideoForm({ ...videoForm, slot: Number(e.target.value) })}
                 />
+              </div>
+
+              <div className="adminFormHint">
+                للفيديوهات الرئيسية استخدم الأرقام 1 إلى 10. الرقم 99 مخصص لقسم التصاميم.
               </div>
 
               <textarea
