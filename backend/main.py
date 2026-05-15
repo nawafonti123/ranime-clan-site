@@ -400,6 +400,32 @@ def reject_video_request(request_id: int):
         raise HTTPException(status_code=500, detail=f"Video request reject failed: {e}")
 
 
+@app.delete("/api/video-requests/{request_id}")
+def delete_video_request(request_id: int):
+    sb = get_supabase()
+
+    try:
+        found = sb.table("video_requests").select("*").eq("id", request_id).limit(1).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Video request read failed: {e}")
+
+    if not found.data:
+        raise HTTPException(status_code=404, detail="طلب الفيديو غير موجود")
+
+    req = found.data[0]
+    status = req.get("status")
+
+    # إذا كان الطلب منشوراً، لا نحذف ملف التخزين هنا لأن التصميم المنشور في site_videos يستخدم نفس الرابط.
+    if status != "approved":
+        safe_remove_storage_file(req.get("video_url"))
+
+    try:
+        sb.table("video_requests").delete().eq("id", request_id).execute()
+        return {"success": True, "message": "تم حذف طلب التصميم"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Video request delete failed: {e}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

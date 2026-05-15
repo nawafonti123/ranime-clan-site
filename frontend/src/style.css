@@ -1795,3 +1795,64 @@ body::before {
     display: block;
   }
 }
+
+
+/* COMPACT MEDIA FIXES */
+.compactMediaGrid,
+.adminMediaList {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 340px));
+  justify-content: center;
+  align-items: start;
+}
+
+.compactMediaGrid .mediaCard {
+  width: 100%;
+  max-width: 340px;
+  justify-self: center;
+}
+
+.compactMediaGrid.count-1 {
+  grid-template-columns: minmax(260px, 340px);
+}
+
+.compactMediaGrid.count-2 {
+  grid-template-columns: repeat(2, minmax(260px, 340px));
+}
+
+.mediaVideoWrap {
+  aspect-ratio: 9 / 13;
+  max-height: 440px;
+}
+
+.mediaInfo {
+  min-height: 118px;
+}
+
+.adminMediaList .adminCard {
+  width: 100%;
+  max-width: 420px;
+  justify-self: center;
+}
+
+.adminActionsRow {
+  flex-wrap: wrap;
+}
+
+.adminActionsRow .mainBtn,
+.adminActionsRow .ghostBtn,
+.adminActionsRow .dangerBtn {
+  flex: 1 1 130px;
+  min-width: 130px;
+}
+
+@media (max-width: 760px) {
+  .compactMediaGrid,
+  .compactMediaGrid.count-2,
+  .adminMediaList {
+    grid-template-columns: minmax(240px, 340px);
+  }
+
+  .mediaVideoWrap {
+    max-height: 410px;
+  }
+}

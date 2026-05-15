@@ -561,7 +561,7 @@ function Videos() {
           )}
         </div>
 
-        <div className="mediaGrid">
+        <div className={`mediaGrid compactMediaGrid count-${Math.min(videos.length, 3)}`}>
           {videos.map(renderVideoCard)}
         </div>
       </section>
@@ -576,7 +576,7 @@ function Videos() {
         </div>
 
         {designs.length ? (
-          <div className="mediaGrid">
+          <div className={`mediaGrid compactMediaGrid count-${Math.min(designs.length, 3)}`}>
             {designs.map(renderVideoCard)}
           </div>
         ) : (
@@ -616,6 +616,7 @@ function VideoRequestSection() {
 
   async function submitVideoRequest(e) {
     e.preventDefault();
+    const formElement = e.currentTarget;
 
     if (!videoFile) {
       setMessage("اختر فيديو التصميم أولاً");
@@ -635,19 +636,28 @@ function VideoRequestSection() {
         body: data,
       });
 
-      const json = await res.json().catch(() => ({}));
+      const text = await res.text();
+      let json = {};
+      try {
+        json = text ? JSON.parse(text) : {};
+      } catch {
+        json = {};
+      }
 
       if (!res.ok || json.success === false) {
         setMessage(json.message || json.detail || "فشل إرسال الفيديو");
         return;
       }
 
-      setMessage(json.message || "تم إرسال طلب الفيديو للإدارة");
+      setMessage(json.message || "تم إرسال طلب الفيديو للإدارة بنجاح");
       setForm({ visitor_name: "", contact: "", title: "", description: "" });
       setVideoFile(null);
-      e.currentTarget.reset();
-    } catch {
-      setMessage("حدث خطأ أثناء إرسال الفيديو");
+      if (formElement && typeof formElement.reset === "function") {
+        formElement.reset();
+      }
+    } catch (error) {
+      console.error("Video request submit error:", error);
+      setMessage("تعذر الاتصال بالخادم، حاول مرة أخرى");
     } finally {
       setSending(false);
     }
@@ -964,6 +974,32 @@ function Admin() {
     }
   }
 
+  async function deleteVideoRequest(id, status) {
+    const ok = window.confirm(
+      status === "approved"
+        ? "حذف الطلب من قائمة المراجعة فقط؟ التصميم المنشور يبقى موجوداً في قسم التصاميم ويمكن حذفه من إدارة الفيديوهات."
+        : "هل تريد حذف طلب التصميم نهائياً؟"
+    );
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`${API}/api/video-requests/${id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل حذف الطلب");
+        return;
+      }
+
+      setVideoRequests((prev) => prev.filter((item) => item.id !== id));
+      alert(json.message || "تم حذف الطلب");
+    } catch {
+      alert("حدث خطأ أثناء حذف طلب التصميم");
+    }
+  }
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return apps;
@@ -1167,7 +1203,7 @@ function Admin() {
                   <div className="adminCardHead">
                     <div>
                       <h3>{v.title}</h3>
-                      <span>Slot #{v.slot}</span>
+                      <span>{v.slot >= 99 ? "تصميم منشور" : `Slot #${v.slot}`}</span>
                     </div>
                     <Video />
                   </div>
@@ -1177,7 +1213,7 @@ function Admin() {
 
                   <div className="adminActionsRow">
                     <button className="ghostBtn" onClick={() => editSiteVideo(v)}>تعديل</button>
-                    <button className="dangerBtn" onClick={() => deleteSiteVideo(v.id)}>حذف</button>
+                    <button className="dangerBtn" onClick={() => deleteSiteVideo(v.id)}>{v.slot >= 99 ? "حذف التصميم" : "حذف"}</button>
                   </div>
                 </div>
               ))}
@@ -1218,12 +1254,15 @@ function Admin() {
                   <p className="desc">{r.description || "لا يوجد وصف"}</p>
                   <video controls src={videoUrl(r.video_url)} />
 
-                  {r.status === "pending" && (
-                    <div className="adminActionsRow">
-                      <button className="mainBtn" onClick={() => reviewVideoRequest(r.id, "approve")}>قبول ونشر</button>
-                      <button className="dangerBtn" onClick={() => reviewVideoRequest(r.id, "reject")}>رفض</button>
-                    </div>
-                  )}
+                  <div className="adminActionsRow">
+                    {r.status === "pending" && (
+                      <>
+                        <button className="mainBtn" onClick={() => reviewVideoRequest(r.id, "approve")}>قبول ونشر</button>
+                        <button className="dangerBtn" onClick={() => reviewVideoRequest(r.id, "reject")}>رفض</button>
+                      </>
+                    )}
+                    <button className="dangerBtn" onClick={() => deleteVideoRequest(r.id, r.status)}>حذف الطلب</button>
+                  </div>
                 </div>
               ))}
 
