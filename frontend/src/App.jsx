@@ -58,9 +58,9 @@ function videoUrl(src) {
 
 function fallbackMainVideos() {
   return [
-    { id: "fallback-1", title: "أداء الأعضاء", description: "فيديو احتياطي يظهر عند تعطل الباك اند", src: clanVideo1, label: "VIDEO 1", fallback: true },
-    { id: "fallback-2", title: "أداء الأعضاء", description: "فيديو احتياطي يظهر عند تعطل الباك اند", src: clanVideo2, label: "VIDEO 2", fallback: true },
-    { id: "fallback-3", title: "أداء الأعضاء", description: "فيديو احتياطي يظهر عند تعطل الباك اند", src: clanVideo3, label: "VIDEO 3", fallback: true },
+    { id: "fallback-1", title: "أداء الأعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo1, label: "VIDEO 1", fallback: true },
+    { id: "fallback-2", title: "أداء الأعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo2, label: "VIDEO 2", fallback: true },
+    { id: "fallback-3", title: "أداء الأعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo3, label: "VIDEO 3", fallback: true },
   ];
 }
 
