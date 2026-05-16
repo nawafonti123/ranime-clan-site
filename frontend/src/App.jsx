@@ -24,6 +24,7 @@ import {
   Trash2,
   UserPlus,
   ChevronDown,
+  Medal,
 } from "lucide-react";
 import "./style.css";
 import clanVideo1 from "./VID-1.mp4";
@@ -574,14 +575,15 @@ function Videos() {
         }));
 
         const sortedMapped = mapped.sort((a, b) => (a.slot || 1) - (b.slot || 1) || String(a.id).localeCompare(String(b.id)));
-        const mainVideos = sortedMapped
-          .filter((v) => (v.slot || 1) < 99)
-          .slice(0, MAX_CLAN_VIDEOS);
-        const designVideos = sortedMapped.filter((v) => (v.slot || 1) >= 99);
+        const monthlyWinners = sortedMapped
+          .filter((v) => [1, 2, 3].includes(Number(v.slot || 0)))
+          .slice(0, 3)
+          .map((v) => ({ ...v, label: `المركز ${v.slot}` }));
+        const designVideos = sortedMapped.filter((v) => Number(v.slot || 1) >= 99);
 
-        setVideos(mainVideos.length ? mainVideos : fallbackMainVideos());
+        setVideos(monthlyWinners.length ? monthlyWinners : fallbackMainVideos());
         setDesigns(designVideos);
-        setUsingFallback(!mainVideos.length);
+        setUsingFallback(!monthlyWinners.length);
       } catch {
         if (!alive) return;
         setVideos(fallbackMainVideos());
@@ -645,8 +647,8 @@ function Videos() {
           )}
         </div>
 
-        <div className={`mediaGrid compactMediaGrid clanVideosGrid count-${Math.min(videos.length, MAX_CLAN_VIDEOS)}`}>
-          {videos.map(renderVideoCard)}
+        <div className="monthlyWinnersGrid">
+          {videos.slice(0, 3).map(renderVideoCard)}
         </div>
       </section>
 
@@ -660,7 +662,7 @@ function Videos() {
         </div>
 
         {designs.length ? (
-          <div className={`mediaGrid compactMediaGrid count-${Math.min(designs.length, 3)}`}>
+          <div className={`mediaGrid compactMediaGrid clanVideosGrid count-${Math.min(designs.length, MAX_CLAN_VIDEOS)}`}>
             {designs.map(renderVideoCard)}
           </div>
         ) : (
@@ -1270,6 +1272,43 @@ function Admin() {
     }
   }
 
+  async function moveToMonthlyWinner(videoItem) {
+    const rawPosition = window.prompt("اختر مركز الفيديو الفائز: 1 أو 2 أو 3", "1");
+    if (rawPosition === null) return;
+
+    const position = Number(rawPosition);
+    if (![1, 2, 3].includes(position)) {
+      alert("المركز يجب أن يكون 1 أو 2 أو 3 فقط");
+      return;
+    }
+
+    const ok = window.confirm(`تحويل هذا الفيديو إلى المركز ${position} في المسابقة الشهرية؟ سيتم استبدال أي فيديو موجود بنفس المركز.`);
+    if (!ok) return;
+
+    const data = new FormData();
+    data.append("title", videoItem.title || "فيديو فائز");
+    data.append("description", videoItem.description || "");
+    data.append("slot", String(position));
+
+    try {
+      const res = await fetch(`${API}/api/site-videos/${videoItem.id}`, {
+        method: "PUT",
+        body: data,
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل تحويل الفيديو للمسابقة الشهرية");
+        return;
+      }
+
+      await loadSiteVideos();
+      alert(json.message || "تم تحويل الفيديو إلى قسم المسابقة الشهرية");
+    } catch {
+      alert("حدث خطأ أثناء تحويل الفيديو");
+    }
+  }
+
   async function reviewVideoRequest(id, action) {
     const ok = window.confirm(action === "approve" ? "قبول الفيديو ونشره؟" : "رفض الفيديو؟");
     if (!ok) return;
@@ -1380,6 +1419,7 @@ function Admin() {
         <button className={adminTab === "applications" ? "active" : ""} onClick={() => setAdminTab("applications")}>طلبات التقديم</button>
         <button className={adminTab === "members" ? "active" : ""} onClick={() => setAdminTab("members")}>التحكم بأعضاء الكلان</button>
         <button className={adminTab === "videos" ? "active" : ""} onClick={() => setAdminTab("videos")}>إدارة فيديوهات الموقع</button>
+        <button className={adminTab === "competitionVideos" ? "active" : ""} onClick={() => setAdminTab("competitionVideos")}>فيديوهات المسابقات</button>
         <button className={adminTab === "requests" ? "active" : ""} onClick={() => setAdminTab("requests")}>طلبات التصاميم</button>
         <button className={adminTab === "branding" ? "active" : ""} onClick={() => setAdminTab("branding")}>لوجو الموقع</button>
         <button className="softAdminBtn" onClick={loadAdminData}>تحديث الكل</button>
@@ -1396,6 +1436,10 @@ function Admin() {
         <div className="sideStat">
           <b>{videoRequests.filter((r) => r.status === "pending").length}</b>
           <span>طلبات فيديو بانتظار المراجعة</span>
+        </div>
+        <div className="sideStat">
+          <b>{siteVideos.filter((v) => Number(v.slot || 0) >= 99).length}</b>
+          <span>فيديوهات مسابقات منشورة</span>
         </div>
       </aside>
 
@@ -1447,7 +1491,7 @@ function Admin() {
                         <option value="member">لاعب عادي</option>
                         <option value="elite">لاعب نخبة</option>
                         <option value="co_leader">كو ليدر</option>
-                        <option value="leader">رئيس الكلان</option>
+                        <option value="leader">قائد الكلان</option>
                       </select>
                       <button className="mainBtn" onClick={() => approveApplication(a.id)} disabled={a.status === "approved"}>
                         {a.status === "approved" ? "تمت إضافته" : "قبول وإظهاره بالهرم"}
@@ -1516,7 +1560,7 @@ function Admin() {
                   <option value="member">لاعب عادي</option>
                   <option value="elite">لاعب نخبة</option>
                   <option value="co_leader">كو ليدر</option>
-                  <option value="leader">رئيس الكلان</option>
+                  <option value="leader">قائد الكلان </option>
                 </select>
               </div>
 
@@ -1689,6 +1733,45 @@ function Admin() {
           </>
         )}
 
+
+        {adminTab === "competitionVideos" && (
+          <>
+            <div className="adminTop">
+              <div>
+                <h1>فيديوهات المسابقات</h1>
+                <p>كل فيديو تم قبوله من طلبات "ارفع تصميمك" يظهر هنا. تقدر تحذفه أو تحوله لفائز بالمركز الأول أو الثاني أو الثالث.</p>
+              </div>
+            </div>
+
+            <div className="adminList adminMediaList">
+              {siteVideos.filter((v) => Number(v.slot || 0) >= 99).map((v) => (
+                <div className="adminCard competitionVideoCard" key={v.id}>
+                  <div className="adminCardHead">
+                    <div>
+                      <h3>{v.title}</h3>
+                      <span>فيديو مسابقات منشور</span>
+                    </div>
+                    <Medal />
+                  </div>
+
+                  <p className="desc">{v.description || "لا يوجد وصف"}</p>
+                  <video controls src={videoUrl(v.video_url)} />
+
+                  <div className="adminActionsRow">
+                    <button className="mainBtn" onClick={() => moveToMonthlyWinner(v)}>تحويل للمسابقة الشهرية</button>
+                    <button className="ghostBtn" onClick={() => editSiteVideo(v)}>تعديل</button>
+                    <button className="dangerBtn" onClick={() => deleteSiteVideo(v.id)}>حذف الفيديو</button>
+                  </div>
+                </div>
+              ))}
+
+              {siteVideos.filter((v) => Number(v.slot || 0) >= 99).length === 0 && (
+                <div className="emptyState">لا توجد فيديوهات مسابقات منشورة حالياً. اقبل طلباً من قسم طلبات التصاميم أولاً.</div>
+              )}
+            </div>
+          </>
+        )}
+
         {adminTab === "branding" && (
           <>
             <div className="adminTop">
@@ -1796,7 +1879,7 @@ function Admin() {
 
 
 const rankLabels = {
-  leader: "رئيس الكلان",
+  leader: "قائد الكلان",
   co_leader: "كو ليدر",
   elite: "لاعب نخبة",
   member: "لاعب عادي",
@@ -1852,7 +1935,7 @@ function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemo
                       <option value="member">لاعب عادي</option>
                       <option value="elite">لاعب نخبة</option>
                       <option value="co_leader">كو ليدر</option>
-                      <option value="leader">رئيس الكلان</option>
+                      <option value="leader">قائد الكلان</option>
                     </select>
                     {memberImageFiles[member.id] && (
                       <button className="mainBtn memberImageSaveBtn" type="button" onClick={() => onImageSave(member)} disabled={savingMemberImageId === member.id}>

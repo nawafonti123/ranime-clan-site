@@ -692,10 +692,13 @@ async def update_site_video(
         updates["storage_path"] = storage_path
 
     try:
+        if slot in {1, 2, 3}:
+            sb.table("site_videos").update({"slot": 99}).eq("slot", slot).neq("id", video_id).execute()
         result = sb.table("site_videos").update(updates).eq("id", video_id).execute()
         if video is not None:
             safe_remove_storage_file(old_video_url)
-        return {"success": True, "message": "تم تحديث الفيديو", "video": (result.data or [updates])[0]}
+        message = "تم تحويل الفيديو إلى قسم المسابقة الشهرية" if slot in {1, 2, 3} else "تم تحديث الفيديو"
+        return {"success": True, "message": message, "video": (result.data or [updates])[0]}
     except Exception as e:
         if video is not None:
             safe_remove_storage_file(updates.get("video_url"))
