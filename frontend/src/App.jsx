@@ -82,7 +82,43 @@ function fallbackMainVideos() {
   ];
 }
 
-function BrandAssets() {
+function normalizeAssetUrl(src) {
+  if (!src) return "";
+  return String(src).startsWith("http") ? src : `${API}${src}`;
+}
+
+function useSiteLogo() {
+  const [siteLogoUrl, setSiteLogoUrl] = useState(logo);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadSiteLogo() {
+      try {
+        const res = await fetch(`${API}/api/site-settings`);
+        if (!res.ok) throw new Error("settings");
+        const json = await res.json();
+        const nextLogo = normalizeAssetUrl(json.logo_url || json.site_logo_url || "");
+        if (alive) setSiteLogoUrl(nextLogo || logo);
+      } catch {
+        if (alive) setSiteLogoUrl(logo);
+      }
+    }
+
+    loadSiteLogo();
+    const onUpdated = (event) => setSiteLogoUrl(normalizeAssetUrl(event.detail?.logoUrl || "") || logo);
+    window.addEventListener("site-logo-updated", onUpdated);
+
+    return () => {
+      alive = false;
+      window.removeEventListener("site-logo-updated", onUpdated);
+    };
+  }, []);
+
+  return siteLogoUrl;
+}
+
+function BrandAssets({ logoUrl = logo }) {
   useEffect(() => {
     let favicon = document.querySelector('link[rel="icon"]');
     if (!favicon) {
@@ -91,7 +127,7 @@ function BrandAssets() {
       document.head.appendChild(favicon);
     }
     favicon.type = "image/png";
-    favicon.href = logo;
+    favicon.href = logoUrl || logo;
 
     let appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
     if (!appleIcon) {
@@ -99,8 +135,8 @@ function BrandAssets() {
       appleIcon.rel = "apple-touch-icon";
       document.head.appendChild(appleIcon);
     }
-    appleIcon.href = logo;
-  }, []);
+    appleIcon.href = logoUrl || logo;
+  }, [logoUrl]);
 
   return (
     <style>{`
@@ -231,6 +267,8 @@ function BrandAssets() {
 }
 
 function Home() {
+  const siteLogoUrl = useSiteLogo();
+
   useEffect(() => {
     if (window.location.hash) {
       setTimeout(() => scrollToHash(window.location.hash), 120);
@@ -304,8 +342,8 @@ function Home() {
 
   return (
     <>
-      <BrandAssets />
-      <Navbar />
+      <BrandAssets logoUrl={siteLogoUrl} />
+      <Navbar logoUrl={siteLogoUrl} />
       <Hero />
       <ClanInfo />
       <Identity />
@@ -322,12 +360,12 @@ function Home() {
         message={message}
         loading={loading}
       />
-      <Footer />
+      <Footer logoUrl={siteLogoUrl} />
     </>
   );
 }
 
-function Navbar() {
+function Navbar({ logoUrl = logo }) {
   const [open, setOpen] = useState(false);
 
   const links = [
@@ -354,7 +392,7 @@ function Navbar() {
   return (
     <nav className="nav">
       <button className="brand" onClick={() => goHomeSection("#top")}>
-        <img className="brandLogoNav" src={logo} alt="RNM ESPORTS" />
+        <img className="brandLogoNav" src={logoUrl || logo} alt="RNM ESPORTS" />
         <span className="brandTextStack">
           <span>RNM</span>
           <small>ESPORTS</small>
@@ -857,6 +895,7 @@ function ApplySection({ form, setForm, video, setVideo, profileImage, setProfile
 }
 
 function Admin() {
+  const siteLogoUrl = useSiteLogo();
   const [apps, setApps] = useState([]);
   const [siteVideos, setSiteVideos] = useState([]);
   const [videoRequests, setVideoRequests] = useState([]);
@@ -887,6 +926,9 @@ function Admin() {
   const [savingManualMember, setSavingManualMember] = useState(false);
   const [memberImageFiles, setMemberImageFiles] = useState({});
   const [savingMemberImageId, setSavingMemberImageId] = useState(null);
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoMessage, setLogoMessage] = useState("");
+  const [savingLogo, setSavingLogo] = useState(false);
 
   useEffect(() => {
     if (allowed) loadAdminData();
@@ -970,6 +1012,44 @@ function Admin() {
       setManualMemberMessage("حدث خطأ أثناء إضافة العضو");
     } finally {
       setSavingManualMember(false);
+    }
+  }
+
+  async function saveSiteLogo(e) {
+    e.preventDefault();
+
+    if (!logoFile) {
+      setLogoMessage("اختر صورة اللوجو أولاً");
+      return;
+    }
+
+    const data = new FormData();
+    data.append("logo", logoFile);
+
+    setSavingLogo(true);
+    setLogoMessage("جاري تغيير اللوجو...");
+
+    try {
+      const res = await fetch(`${API}/api/site-logo`, {
+        method: "POST",
+        body: data,
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        setLogoMessage(json.message || json.detail || "فشل تغيير اللوجو");
+        return;
+      }
+
+      const nextLogo = normalizeAssetUrl(json.logo_url || "");
+      if (nextLogo) window.dispatchEvent(new CustomEvent("site-logo-updated", { detail: { logoUrl: nextLogo } }));
+      setLogoMessage(json.message || "تم تغيير لوجو الموقع بنجاح");
+      setLogoFile(null);
+    } catch {
+      setLogoMessage("حدث خطأ أثناء تغيير اللوجو");
+    } finally {
+      setSavingLogo(false);
     }
   }
 
@@ -1256,11 +1336,11 @@ function Admin() {
   if (!allowed) {
     return (
       <>
-      <BrandAssets />
+      <BrandAssets logoUrl={siteLogoUrl} />
       <main className="adminPage">
         <div className="adminLogin">
           <div className="adminLogo">
-            <img className="rnmLogoImg adminLoginLogoImg" src={logo} alt="RNM ADMIN" />
+            <img className="rnmLogoImg adminLoginLogoImg" src={siteLogoUrl || logo} alt="RNM ADMIN" />
           </div>
           <h1>لوحة إدارة RNM</h1>
           <p>الدخول مخصص للإدارة فقط لمراجعة طلبات الانضمام وإدارة فيديوهات الموقع.</p>
@@ -1293,11 +1373,11 @@ function Admin() {
 
   return (
     <>
-    <BrandAssets />
+    <BrandAssets logoUrl={siteLogoUrl} />
     <main className="adminDashboard">
       <aside className="adminSide">
         <div className="sideBrand">
-          <img className="rnmLogoImg adminSideLogoImg" src={logo} alt="RNM ADMIN" />
+          <img className="rnmLogoImg adminSideLogoImg" src={siteLogoUrl || logo} alt="RNM ADMIN" />
           <h2>RNM</h2>
           <span>ADMIN PANEL</span>
         </div>
@@ -1306,6 +1386,7 @@ function Admin() {
         <button className={adminTab === "members" ? "active" : ""} onClick={() => setAdminTab("members")}>التحكم بأعضاء الكلان</button>
         <button className={adminTab === "videos" ? "active" : ""} onClick={() => setAdminTab("videos")}>إدارة فيديوهات الموقع</button>
         <button className={adminTab === "requests" ? "active" : ""} onClick={() => setAdminTab("requests")}>طلبات التصاميم</button>
+        <button className={adminTab === "branding" ? "active" : ""} onClick={() => setAdminTab("branding")}>لوجو الموقع</button>
         <button className="softAdminBtn" onClick={loadAdminData}>تحديث الكل</button>
         <button className="softAdminBtn" onClick={() => go("/")}>فتح الموقع</button>
 
@@ -1613,6 +1694,58 @@ function Admin() {
           </>
         )}
 
+        {adminTab === "branding" && (
+          <>
+            <div className="adminTop">
+              <div>
+                <h1>التحكم في لوجو الموقع</h1>
+                <p>غيّر لوجو الموقع من لوحة الإدارة، وسيتم تحديث لوجو الناف بار والفوتر وأيقونة المتصفح favicon تلقائياً.</p>
+              </div>
+            </div>
+
+            <form className="form logoControlForm" onSubmit={saveSiteLogo}>
+              <div className="memberImportInfo">
+                <Crown />
+                <div>
+                  <h3>اللوجو الحالي</h3>
+                  <p>اختر صورة جديدة بصيغة PNG / JPG / WEBP ثم اضغط حفظ.</p>
+                </div>
+              </div>
+
+              <div className="logoPreviewBox">
+                <img src={siteLogoUrl || logo} alt="Current Logo" />
+                <span>المعاينة الحالية</span>
+              </div>
+
+              <label className="uploadBox logoUploadBox">
+                <Upload />
+                <b>{logoFile ? logoFile.name : "اختر لوجو جديد للموقع"}</b>
+                <span>سيتم تحديث اللوجو والـ favicon مباشرة بعد الحفظ</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    setLogoFile(e.target.files[0] || null);
+                    setLogoMessage("");
+                  }}
+                />
+              </label>
+
+              <button className="mainBtn submitBtn" type="submit" disabled={savingLogo}>
+                {savingLogo ? "جاري الحفظ..." : "حفظ اللوجو الجديد"}
+              </button>
+
+              {logoMessage && (
+                <div className="successMsg">
+                  <CheckCircle size={20} />
+                  {logoMessage}
+                </div>
+              )}
+            </form>
+          </>
+        )}
+
         {adminTab === "requests" && (
           <>
             <div className="adminTop">
@@ -1746,6 +1879,7 @@ function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemo
 }
 
 function ClanMembersPage() {
+  const siteLogoUrl = useSiteLogo();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -1768,8 +1902,8 @@ function ClanMembersPage() {
 
   return (
     <>
-      <BrandAssets />
-      <Navbar />
+      <BrandAssets logoUrl={siteLogoUrl} />
+      <Navbar logoUrl={siteLogoUrl} />
       <section className="membersHero">
         <div className="heroBadge"><Crown size={22} /> RNM CLAN MEMBERS</div>
         <h1>أعضاء الكلان<span>HIERARCHY</span></h1>
@@ -1779,12 +1913,12 @@ function ClanMembersPage() {
       <section className="section membersSection">
         {loading ? <div className="emptyState">جاري تحميل أعضاء الكلان...</div> : <ClanMembersHierarchy members={members} />}
       </section>
-      <Footer />
+      <Footer logoUrl={siteLogoUrl} />
     </>
   );
 }
 
-function Footer() {
+function Footer({ logoUrl = logo }) {
   return (
     <footer className="siteFooter">
       <div className="footerGlow" />
@@ -1793,7 +1927,7 @@ function Footer() {
         <span>ONE CLAN</span>
         <b>RNM</b>
         <span>ONE HEART</span>
-        <img className="footerLogoImg" src={logo} alt="RNM ESPORTS" />
+        <img className="footerLogoImg" src={logoUrl || logo} alt="RNM ESPORTS" />
         <span>ONE LEGACY</span>
       </div>
 

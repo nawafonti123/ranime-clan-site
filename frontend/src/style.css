@@ -3049,3 +3049,49 @@ select option {
   font-size: 13px !important;
   border-radius: 14px !important;
 }
+
+/* SITE LOGO CONTROL */
+.logoControlForm {
+  width: min(820px, 100%);
+  margin-bottom: 32px;
+}
+
+.logoPreviewBox {
+  grid-column: span 2;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  padding: 28px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 0, 0, 0.28);
+  background:
+    radial-gradient(circle at center, rgba(255, 0, 0, 0.18), transparent 54%),
+    rgba(0, 0, 0, 0.35);
+}
+
+.logoPreviewBox img {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  border-radius: 28px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 0, 0, 0.32);
+  box-shadow: 0 0 36px rgba(255, 0, 0, 0.35);
+  padding: 10px;
+}
+
+.logoPreviewBox span {
+  color: rgba(255, 255, 255, 0.68);
+  font-weight: 800;
+}
+
+.logoUploadBox {
+  min-height: 130px;
+}
+
+@media (max-width: 760px) {
+  .logoPreviewBox {
+    grid-column: span 1;
+  }
+}

@@ -548,6 +548,69 @@ def delete_clan_member(member_id: int):
         raise HTTPException(status_code=500, detail=f"Clan member delete failed: {e}")
 
 
+
+# =========================
+# SITE BRANDING / LOGO
+# =========================
+
+@app.get("/api/site-settings")
+def get_site_settings():
+    sb = get_supabase()
+    settings = {"logo_url": None}
+
+    try:
+        result = (
+            sb.table("site_settings")
+            .select("key, value")
+            .in_("key", ["site_logo_url"])
+            .execute()
+        )
+        for item in result.data or []:
+            if item.get("key") == "site_logo_url":
+                settings["logo_url"] = item.get("value")
+    except Exception:
+        # إذا لم يكن جدول الإعدادات موجوداً لا نكسر الموقع، ويظهر اللوجو الاحتياطي.
+        pass
+
+    return settings
+
+
+@app.post("/api/site-logo")
+async def update_site_logo(logo: UploadFile = File(...)):
+    sb = get_supabase()
+    public_url, storage_path = await upload_image_to_storage(logo, "site-logo")
+
+    try:
+        old_settings = (
+            sb.table("site_settings")
+            .select("key, value")
+            .eq("key", "site_logo_url")
+            .limit(1)
+            .execute()
+        )
+        old_logo_url = (old_settings.data or [{}])[0].get("value")
+    except Exception:
+        old_logo_url = None
+
+    rows = [
+        {"key": "site_logo_url", "value": public_url, "updated_at": datetime.utcnow().isoformat()},
+        {"key": "site_logo_storage_path", "value": storage_path, "updated_at": datetime.utcnow().isoformat()},
+    ]
+
+    try:
+        sb.table("site_settings").upsert(rows, on_conflict="key").execute()
+        if old_logo_url and old_logo_url != public_url:
+            safe_remove_storage_file(old_logo_url)
+        return {
+            "success": True,
+            "message": "تم تحديث لوجو الموقع والـ favicon بنجاح",
+            "logo_url": public_url,
+        }
+    except Exception as e:
+        safe_remove_storage_file(public_url)
+        raise HTTPException(status_code=500, detail=f"Site logo update failed: {e}")
+
+
 # =========================
 # SITE VIDEOS MANAGEMENT
 # =========================
