@@ -269,17 +269,18 @@ def execute_with_retry(operation, label: str = "Supabase operation", attempts: i
 
 PRIZE_MARKER = "__RNM_PRIZE__:"
 
+def merge_prize_into_description(description: str = "", prize: str = "") -> str:
+    """Store winner prize inside description so it works even without adding a new DB column."""
+    clean_description = str(description or "")
+    clean_prize = str(prize or "").strip()
 
-def clean_description_and_prize(description: str | None, prize: str | None = "") -> str:
-    """Store winner prize inside description so it works without changing Supabase schema."""
-    text = (description or "").strip()
-    if PRIZE_MARKER in text:
-        text = text.split(PRIZE_MARKER, 1)[0].strip()
+    if PRIZE_MARKER in clean_description:
+        clean_description = clean_description.rsplit(PRIZE_MARKER, 1)[0].strip()
 
-    clean_prize = (prize or "").strip()
     if clean_prize:
-        return f"{text}\n\n{PRIZE_MARKER}{clean_prize}" if text else f"{PRIZE_MARKER}{clean_prize}"
-    return text
+        return f"{clean_description}\n{PRIZE_MARKER}{clean_prize}".strip()
+
+    return clean_description.strip()
 
 
 @app.get("/")
@@ -762,7 +763,7 @@ async def create_site_video(
 
     row = {
         "title": title,
-        "description": clean_description_and_prize(description, prize),
+        "description": merge_prize_into_description(description, prize),
         "slot": slot,
         "video_url": public_url,
         "storage_path": storage_path,
@@ -799,7 +800,7 @@ async def update_site_video(
 
     updates = {
         "title": title,
-        "description": clean_description_and_prize(description, prize),
+        "description": merge_prize_into_description(description, prize),
         "slot": slot,
     }
 
@@ -914,7 +915,7 @@ def approve_video_request(request_id: int):
 
         design_row = {
             "title": req.get("title") or "تصميم جديد",
-            "description": clean_description_and_prize(req.get("description") or "", ""),
+            "description": req.get("description") or "",
             "slot": 99,
             "video_url": req.get("video_url"),
             "storage_path": req.get("storage_path"),

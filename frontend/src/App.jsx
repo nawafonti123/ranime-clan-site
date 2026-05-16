@@ -880,13 +880,11 @@ function Videos() {
           <span>{rankText}</span>
           <h3>{item.title}</h3>
           <p>{item.description || "أفضل أداء تم اختياره من إدارة الكلان لهذا الشهر."}</p>
-          {item.prize && (
-            <div className="winnerPrizeBadge">
-              <Trophy size={18} />
-              <span>الجائزة</span>
-              <b>{item.prize}</b>
-            </div>
-          )}
+          <div className={`winnerPrizeBadge ${item.prize ? "" : "emptyPrize"}`}>
+            <Trophy size={18} />
+            <span>الجائزة</span>
+            <b>{item.prize || "لم يتم تحديد الجائزة"}</b>
+          </div>
         </div>
 
         <div className="podiumBase">
@@ -1594,8 +1592,11 @@ function Admin() {
     }
 
     const data = new FormData();
+    const cleanDescription = cleanVideoDescription(videoItem) || "";
+    const descriptionWithPrize = `${cleanDescription}\n${PRIZE_MARKER}${prize}`.trim();
+
     data.append("title", videoItem.title || "فيديو فائز");
-    data.append("description", cleanVideoDescription(videoItem) || "");
+    data.append("description", descriptionWithPrize);
     data.append("slot", String(position));
     data.append("prize", prize);
 

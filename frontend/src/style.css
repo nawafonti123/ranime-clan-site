@@ -4068,6 +4068,13 @@ body:has(.adminDashboard) {
 }
 
 .winnerPrizeBadge,
+
+.winnerPrizeBadge.emptyPrize {
+  opacity: 0.72;
+  border-style: dashed;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.055), rgba(255, 0, 0, 0.08));
+}
+
 .adminPrizeTag {
   display: inline-flex;
   align-items: center;
