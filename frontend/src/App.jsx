@@ -850,6 +850,13 @@ function Admin() {
   const [membersImportFile, setMembersImportFile] = useState(null);
   const [importingMembers, setImportingMembers] = useState(false);
   const [membersImportMessage, setMembersImportMessage] = useState("");
+  const [manualMemberForm, setManualMemberForm] = useState({
+    player_name: "",
+    clan_rank: "member",
+  });
+  const [manualMemberImage, setManualMemberImage] = useState(null);
+  const [manualMemberMessage, setManualMemberMessage] = useState("");
+  const [savingManualMember, setSavingManualMember] = useState(false);
 
   useEffect(() => {
     if (allowed) loadAdminData();
@@ -892,6 +899,47 @@ function Admin() {
       setClanMembers(Array.isArray(json) ? json : []);
     } catch {
       setClanMembers([]);
+    }
+  }
+
+  async function addManualClanMember(e) {
+    e.preventDefault();
+
+    const name = manualMemberForm.player_name.trim();
+    if (!name) {
+      setManualMemberMessage("اكتب اسم العضو أولاً");
+      return;
+    }
+
+    const data = new FormData();
+    data.append("player_name", name);
+    data.append("clan_rank", manualMemberForm.clan_rank || "member");
+    if (manualMemberImage) data.append("profile_image", manualMemberImage);
+
+    setSavingManualMember(true);
+    setManualMemberMessage("جاري إضافة العضو...");
+
+    try {
+      const res = await fetch(`${API}/api/clan-members`, {
+        method: "POST",
+        body: data,
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        setManualMemberMessage(json.message || json.detail || "فشل إضافة العضو");
+        return;
+      }
+
+      setManualMemberMessage(json.message || "تم إضافة العضو بنجاح");
+      setManualMemberForm({ player_name: "", clan_rank: "member" });
+      setManualMemberImage(null);
+      await loadClanMembers();
+    } catch {
+      setManualMemberMessage("حدث خطأ أثناء إضافة العضو");
+    } finally {
+      setSavingManualMember(false);
     }
   }
 
@@ -1302,6 +1350,65 @@ function Admin() {
               </div>
             </div>
 
+            <form className="form manualMemberForm" onSubmit={addManualClanMember}>
+              <div className="memberImportInfo">
+                <UserPlus />
+                <div>
+                  <h3>إضافة عضو يدوي</h3>
+                  <p>اكتب الاسم، اختر المنصب، ويمكنك إضافة صورة اختيارية للعضو.</p>
+                </div>
+              </div>
+
+              <div className="inputGroup">
+                <input
+                  placeholder="اسم العضو"
+                  value={manualMemberForm.player_name}
+                  onChange={(e) => {
+                    setManualMemberForm({ ...manualMemberForm, player_name: e.target.value });
+                    setManualMemberMessage("");
+                  }}
+                />
+              </div>
+
+              <div className="inputGroup">
+                <select
+                  value={manualMemberForm.clan_rank}
+                  onChange={(e) => setManualMemberForm({ ...manualMemberForm, clan_rank: e.target.value })}
+                >
+                  <option value="member">لاعب عادي</option>
+                  <option value="elite">لاعب نخبة</option>
+                  <option value="co_leader">كو ليدر</option>
+                  <option value="leader">رئيس الكلان</option>
+                </select>
+              </div>
+
+              <label className="uploadBox compactUploadBox">
+                <Upload />
+                <b>{manualMemberImage ? manualMemberImage.name : "صورة العضو اختيارية"}</b>
+                <span>PNG / JPG / WEBP</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    setManualMemberImage(e.target.files[0] || null);
+                    setManualMemberMessage("");
+                  }}
+                />
+              </label>
+
+              <button className="mainBtn submitBtn" type="submit" disabled={savingManualMember}>
+                {savingManualMember ? "جاري الإضافة..." : "إضافة العضو"}
+              </button>
+
+              {manualMemberMessage && (
+                <div className="successMsg">
+                  <CheckCircle size={20} />
+                  {manualMemberMessage}
+                </div>
+              )}
+            </form>
+
             <form className="form memberImportForm" onSubmit={importClanMembers}>
               <div className="memberImportInfo">
                 <Upload />
@@ -1528,12 +1635,6 @@ function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemo
                 <h3>{member.player_name}</h3>
                 <span className="memberRank">{member.clan_title || group.label}</span>
 
-                <div className="memberMiniGrid">
-                  <p><IdCard size={14} /> {member.pubg_id || "بدون ID"}</p>
-                  <p><Monitor size={14} /> {member.device || "غير محدد"}</p>
-                  <p><Eye size={14} /> {member.fps || "غير محدد"}</p>
-                  <p><Sword size={14} /> {member.game_role || "غير محدد"}</p>
-                </div>
 
                 {adminMode && (
                   <div className="memberAdminControls">

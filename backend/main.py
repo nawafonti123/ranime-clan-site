@@ -400,6 +400,51 @@ async def import_clan_members(file: UploadFile = File(...)):
     }
 
 
+@app.post("/api/clan-members")
+async def create_clan_member_manual(
+    player_name: str = Form(...),
+    clan_rank: str = Form("member"),
+    profile_image: UploadFile | None = File(None),
+):
+    sb = get_supabase()
+
+    if clan_rank not in CLAN_RANKS:
+        raise HTTPException(status_code=400, detail="رتبة العضو غير صحيحة")
+
+    image_url = None
+    image_storage_path = None
+
+    if profile_image is not None:
+        image_url, image_storage_path = await upload_image_to_storage(profile_image, "profile-images")
+
+    row = {
+        "application_id": None,
+        "player_name": player_name.strip(),
+        "pubg_id": "",
+        "discord": "",
+        "device": "",
+        "fps": "",
+        "game_role": "",
+        "description": "",
+        "video_url": None,
+        "profile_image_url": image_url,
+        "profile_image_storage_path": image_storage_path,
+        "clan_rank": clan_rank,
+        "clan_title": CLAN_RANKS[clan_rank],
+        "rank_order": RANK_ORDER_MAP[clan_rank],
+        "is_active": True,
+        "created_at": datetime.utcnow().isoformat(),
+    }
+
+    try:
+        result = sb.table("clan_members").insert(row).execute()
+        return {"success": True, "message": "تم إضافة العضو يدوياً بنجاح", "member": (result.data or [row])[0]}
+    except Exception as e:
+        if image_url:
+            safe_remove_storage_file(image_url)
+        raise HTTPException(status_code=500, detail=f"Manual clan member insert failed: {e}")
+
+
 @app.post("/api/applications/{application_id}/approve")
 def approve_application_as_member(
     application_id: int,
