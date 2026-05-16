@@ -1166,6 +1166,7 @@ function Admin() {
     id: null,
     title: "",
     description: "",
+    prize: "",
     slot: 1,
     file: null,
   });
@@ -1504,6 +1505,7 @@ function Admin() {
     const data = new FormData();
     data.append("title", videoForm.title || "فيديو RNM");
     data.append("description", videoForm.description || "");
+    data.append("prize", videoForm.prize || "");
     data.append("slot", String(videoForm.slot || 1));
     if (videoForm.file) data.append("video", videoForm.file);
 
@@ -1521,7 +1523,7 @@ function Admin() {
         return;
       }
 
-      setVideoForm({ id: null, title: "", description: "", slot: 1, file: null });
+      setVideoForm({ id: null, title: "", description: "", prize: "", slot: 1, file: null });
       await loadSiteVideos();
       alert(json.message || "تم حفظ الفيديو");
     } catch {
@@ -1537,6 +1539,7 @@ function Admin() {
       id: item.id,
       title: item.title || "",
       description: cleanVideoDescription(item) || "",
+      prize: getVideoPrize(item) || "",
       slot: item.slot || 1,
       file: null,
     });
@@ -1981,6 +1984,14 @@ function Admin() {
                 للفيديوهات الرئيسية استخدم الأرقام 1 إلى 10. الرقم 99 مخصص لقسم التصاميم.
               </div>
 
+              <div className="inputGroup prizeInputGroup">
+                <input
+                  placeholder="الجائزة مثل: 10$ أو شدات أو لقب خاص"
+                  value={videoForm.prize}
+                  onChange={(e) => setVideoForm({ ...videoForm, prize: e.target.value })}
+                />
+              </div>
+
               <textarea
                 placeholder="وصف الفيديو"
                 value={videoForm.description}
@@ -2002,7 +2013,7 @@ function Admin() {
                 <button
                   type="button"
                   className="ghostBtn submitBtn"
-                  onClick={() => setVideoForm({ id: null, title: "", description: "", slot: 1, file: null })}
+                  onClick={() => setVideoForm({ id: null, title: "", description: "", prize: "", slot: 1, file: null })}
                 >
                   إلغاء التعديل
                 </button>
