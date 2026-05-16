@@ -39,6 +39,22 @@ function go(path) {
   window.dispatchEvent(new Event("popstate"));
 }
 
+function scrollToHash(hash) {
+  const id = String(hash || "").replace("#", "");
+  if (!id) return;
+
+  window.requestAnimationFrame(() => {
+    const target = document.getElementById(id);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+function goHomeSection(hash = "#top") {
+  const cleanHash = hash.startsWith("#") ? hash : `#${hash}`;
+  go(`/${cleanHash}`);
+  setTimeout(() => scrollToHash(cleanHash), 80);
+}
+
 function useRoute() {
   const [path, setPath] = useState(window.location.pathname);
 
@@ -215,6 +231,12 @@ function BrandAssets() {
 }
 
 function Home() {
+  useEffect(() => {
+    if (window.location.hash) {
+      setTimeout(() => scrollToHash(window.location.hash), 120);
+    }
+  }, []);
+
   const [form, setForm] = useState({
     player_name: "",
     pubg_id: "",
@@ -317,9 +339,21 @@ function Navbar() {
     ["التقديم", "#apply"],
   ];
 
+  function handleNav(href) {
+    setOpen(false);
+
+    if (href.startsWith("#")) {
+      goHomeSection(href);
+      return;
+    }
+
+    go(href);
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 60);
+  }
+
   return (
     <nav className="nav">
-      <button className="brand" onClick={() => go("/")}>
+      <button className="brand" onClick={() => goHomeSection("#top")}>
         <img className="brandLogoNav" src={logo} alt="RNM ESPORTS" />
         <span className="brandTextStack">
           <span>RNM</span>
@@ -329,15 +363,9 @@ function Navbar() {
 
       <div className={`navLinks ${open ? "show" : ""}`}>
         {links.map(([label, href]) => (
-          href.startsWith("/") ? (
-            <button key={label} type="button" onClick={() => { setOpen(false); go(href); }}>
-              {label}
-            </button>
-          ) : (
-            <a key={label} href={href} onClick={() => setOpen(false)}>
-              {label}
-            </a>
-          )
+          <button key={label} type="button" onClick={() => handleNav(href)}>
+            {label}
+          </button>
         ))}
       </div>
 
