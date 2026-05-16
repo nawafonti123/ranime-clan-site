@@ -549,7 +549,13 @@ function Identity() {
 
 function Videos() {
   const [selectedVideo, setSelectedVideo] = useState(null);
-  const [videos, setVideos] = useState(fallbackMainVideos());
+  const [videos, setVideos] = useState(
+    fallbackMainVideos().map((item, index) => ({
+      ...item,
+      slot: index + 1,
+      label: `المركز ${index + 1}`,
+    }))
+  );
   const [designs, setDesigns] = useState([]);
   const [usingFallback, setUsingFallback] = useState(false);
 
@@ -570,7 +576,7 @@ function Videos() {
           description: item.description || "فيديو من إدارة الكلان",
           src: videoUrl(item.video_url),
           label: item.slot && item.slot >= 99 ? "DESIGN" : `VIDEO ${item.slot || index + 1}`,
-          slot: item.slot || index + 1,
+          slot: Number(item.slot || index + 1),
           fallback: false,
         }));
 
@@ -580,13 +586,24 @@ function Videos() {
           .slice(0, 3)
           .map((v) => ({ ...v, label: `المركز ${v.slot}` }));
         const designVideos = sortedMapped.filter((v) => Number(v.slot || 1) >= 99);
+        const fallbackWinners = fallbackMainVideos().map((item, index) => ({
+          ...item,
+          slot: index + 1,
+          label: `المركز ${index + 1}`,
+        }));
 
-        setVideos(monthlyWinners.length ? monthlyWinners : fallbackMainVideos());
+        setVideos(monthlyWinners.length ? monthlyWinners : fallbackWinners);
         setDesigns(designVideos);
         setUsingFallback(!monthlyWinners.length);
       } catch {
         if (!alive) return;
-        setVideos(fallbackMainVideos());
+        setVideos(
+          fallbackMainVideos().map((item, index) => ({
+            ...item,
+            slot: index + 1,
+            label: `المركز ${index + 1}`,
+          }))
+        );
         setDesigns([]);
         setUsingFallback(true);
       }
@@ -598,6 +615,13 @@ function Videos() {
     };
   }, []);
 
+  const podiumVideos = useMemo(() => {
+    const bySlot = new Map(videos.map((item, index) => [Number(item.slot || index + 1), item]));
+    return [2, 1, 3]
+      .map((position) => bySlot.get(position) || videos[position - 1])
+      .filter(Boolean);
+  }, [videos]);
+
   function renderVideoCard(item, index) {
     return (
       <div className="mediaCard" key={`${item.id}-${index}`}>
@@ -608,7 +632,7 @@ function Videos() {
             playsInline
             preload="metadata"
             onError={(e) => {
-              if (!item.fallback && videos[index]) {
+              if (!item.fallback) {
                 e.currentTarget.src = fallbackMainVideos()[index % 3].src;
               }
             }}
@@ -631,9 +655,57 @@ function Videos() {
     );
   }
 
+  function renderPodiumCard(item, index) {
+    const position = Number(item.slot || index + 1);
+    const rankText = position === 1 ? "المركز الأول" : position === 2 ? "المركز الثاني" : "المركز الثالث";
+
+    return (
+      <div className={`winnerPodiumCard rank-${position}`} key={`winner-${item.id}-${position}`}>
+        <div className="winnerVideoShell">
+          <video
+            src={item.src}
+            muted
+            playsInline
+            preload="metadata"
+            onError={(e) => {
+              if (!item.fallback) {
+                e.currentTarget.src = fallbackMainVideos()[(position - 1 + 3) % 3].src;
+              }
+            }}
+          />
+
+          <button className="winnerPlayLayer" onClick={() => setSelectedVideo(item)}>
+            <span>
+              <Video size={34} />
+            </span>
+          </button>
+
+          <div className="winnerRankBadge">#{position}</div>
+          {position === 1 && (
+            <div className="winnerCrownBadge">
+              <Crown size={24} />
+            </div>
+          )}
+        </div>
+
+        <div className="winnerInfo">
+          <span>{rankText}</span>
+          <h3>{item.title}</h3>
+          <p>{item.description || "أفضل أداء تم اختياره من إدارة الكلان لهذا الشهر."}</p>
+        </div>
+
+        <div className="podiumBase">
+          <div className="podiumNumber">{position}</div>
+          <div className="podiumGlow" />
+          <b>{rankText}</b>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      <section className="section" id="videos">
+      <section className="section monthlyWinnersSection" id="videos">
         <div className="sectionHead">
           <span>CLAN MEDIA</span>
           <h2>مسابقه شهريه لافضل اداء داخل الكلان</h2>
@@ -647,8 +719,15 @@ function Videos() {
           )}
         </div>
 
-        <div className="monthlyWinnersGrid">
-          {videos.slice(0, 3).map(renderVideoCard)}
+        <div className="winnerPodiumStage">
+          <div className="podiumBackGlow" />
+          <div className="podiumHeaderMini">
+            <Trophy size={24} />
+            <span>أفضل 3 أداءات لهذا الشهر</span>
+          </div>
+          <div className="winnerPodiumGrid">
+            {podiumVideos.map(renderPodiumCard)}
+          </div>
         </div>
       </section>
 
