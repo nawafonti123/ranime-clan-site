@@ -857,6 +857,8 @@ function Admin() {
   const [manualMemberImage, setManualMemberImage] = useState(null);
   const [manualMemberMessage, setManualMemberMessage] = useState("");
   const [savingManualMember, setSavingManualMember] = useState(false);
+  const [memberImageFiles, setMemberImageFiles] = useState({});
+  const [savingMemberImageId, setSavingMemberImageId] = useState(null);
 
   useEffect(() => {
     if (allowed) loadAdminData();
@@ -1012,6 +1014,38 @@ function Admin() {
       await loadClanMembers();
     } catch {
       alert("حدث خطأ أثناء تحديث العضو");
+    }
+  }
+
+  async function updateClanMemberImage(member) {
+    const file = memberImageFiles[member.id];
+    if (!file) {
+      alert("اختر صورة العضو أولاً");
+      return;
+    }
+
+    const data = new FormData();
+    data.append("clan_rank", member.clan_rank || "member");
+    data.append("profile_image", file);
+
+    setSavingMemberImageId(member.id);
+    try {
+      const res = await fetch(`${API}/api/clan-members/${member.id}`, { method: "PUT", body: data });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل تحديث صورة العضو");
+        return;
+      }
+      setMemberImageFiles((prev) => {
+        const next = { ...prev };
+        delete next[member.id];
+        return next;
+      });
+      await loadClanMembers();
+    } catch {
+      alert("حدث خطأ أثناء تحديث صورة العضو");
+    } finally {
+      setSavingMemberImageId(null);
     }
   }
 
@@ -1448,7 +1482,16 @@ function Admin() {
               )}
             </form>
 
-            <ClanMembersHierarchy members={clanMembers} adminMode onRankChange={updateClanMemberRank} onRemove={removeClanMember} />
+            <ClanMembersHierarchy
+              members={clanMembers}
+              adminMode
+              onRankChange={updateClanMemberRank}
+              onRemove={removeClanMember}
+              memberImageFiles={memberImageFiles}
+              savingMemberImageId={savingMemberImageId}
+              onImageSelect={(id, file) => setMemberImageFiles((prev) => ({ ...prev, [id]: file }))}
+              onImageSave={updateClanMemberImage}
+            />
           </>
         )}
 
@@ -1605,7 +1648,7 @@ const rankLabels = {
 
 const rankOrder = ["leader", "co_leader", "elite", "member"];
 
-function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemove }) {
+function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemove, memberImageFiles = {}, onImageSelect, onImageSave, savingMemberImageId }) {
   const grouped = rankOrder.map((rank) => ({
     rank,
     label: rankLabels[rank],
@@ -1624,13 +1667,24 @@ function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemo
           <div className="pyramidMembers">
             {group.items.length ? group.items.map((member) => (
               <div className="memberCard" key={member.id}>
-                <div className="memberAvatarRing">
+                <label className={`memberAvatarRing ${adminMode ? "editableAvatar" : ""}`} title={adminMode ? "اضغط لتغيير صورة العضو" : member.player_name}>
                   {member.profile_image_url ? (
                     <img src={videoUrl(member.profile_image_url)} alt={member.player_name} />
                   ) : (
                     <Users />
                   )}
-                </div>
+                  {adminMode && (
+                    <>
+                      <span className="avatarEditHint">تغيير</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={(e) => onImageSelect && onImageSelect(member.id, e.target.files[0] || null)}
+                      />
+                    </>
+                  )}
+                </label>
 
                 <h3>{member.player_name}</h3>
                 <span className="memberRank">{member.clan_title || group.label}</span>
@@ -1644,6 +1698,11 @@ function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemo
                       <option value="co_leader">كو ليدر</option>
                       <option value="leader">رئيس الكلان</option>
                     </select>
+                    {memberImageFiles[member.id] && (
+                      <button className="mainBtn memberImageSaveBtn" type="button" onClick={() => onImageSave(member)} disabled={savingMemberImageId === member.id}>
+                        {savingMemberImageId === member.id ? "جاري الحفظ..." : "حفظ الصورة"}
+                      </button>
+                    )}
                     <button className="dangerBtn" onClick={() => onRemove(member.id)}>إزالة</button>
                   </div>
                 )}

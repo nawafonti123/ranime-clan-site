@@ -428,7 +428,6 @@ async def create_clan_member_manual(
         "description": "",
         "video_url": None,
         "profile_image_url": image_url,
-        "profile_image_storage_path": image_storage_path,
         "clan_rank": clan_rank,
         "clan_title": CLAN_RANKS[clan_rank],
         "rank_order": RANK_ORDER_MAP[clan_rank],
@@ -494,29 +493,48 @@ def approve_application_as_member(
 
 
 @app.put("/api/clan-members/{member_id}")
-def update_clan_member(
+async def update_clan_member(
     member_id: int,
     clan_rank: str = Form("member"),
     custom_title: str = Form(""),
     is_active: bool = Form(True),
+    profile_image: UploadFile | None = File(None),
 ):
     sb = get_supabase()
 
     if clan_rank not in CLAN_RANKS:
         raise HTTPException(status_code=400, detail="رتبة العضو غير صحيحة")
 
-    rank_order_map = {"leader": 1, "co_leader": 2, "elite": 3, "member": 4}
+    try:
+        found = sb.table("clan_members").select("id, profile_image_url").eq("id", member_id).limit(1).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Clan member read failed: {e}")
+
+    if not found.data:
+        raise HTTPException(status_code=404, detail="عضو الكلان غير موجود")
+
     updates = {
         "clan_rank": clan_rank,
         "clan_title": custom_title or CLAN_RANKS[clan_rank],
-        "rank_order": rank_order_map[clan_rank],
+        "rank_order": RANK_ORDER_MAP[clan_rank],
         "is_active": is_active,
     }
 
+    old_image_url = found.data[0].get("profile_image_url")
+    new_image_url = None
+
+    if profile_image is not None:
+        new_image_url, _image_storage_path = await upload_image_to_storage(profile_image, "profile-images")
+        updates["profile_image_url"] = new_image_url
+
     try:
         result = sb.table("clan_members").update(updates).eq("id", member_id).execute()
+        if new_image_url and old_image_url:
+            safe_remove_storage_file(old_image_url)
         return {"success": True, "message": "تم تحديث عضو الكلان", "member": (result.data or [updates])[0]}
     except Exception as e:
+        if new_image_url:
+            safe_remove_storage_file(new_image_url)
         raise HTTPException(status_code=500, detail=f"Clan member update failed: {e}")
 
 

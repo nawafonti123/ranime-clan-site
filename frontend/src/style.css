@@ -3006,3 +3006,46 @@ select option {
     min-height: 190px;
   }
 }
+
+/* EDIT MEMBER IMAGE FROM ADMIN */
+.editableAvatar {
+  cursor: pointer;
+  position: relative;
+  transition: 0.22s ease;
+}
+
+.editableAvatar:hover {
+  transform: scale(1.04);
+  border-color: rgba(255, 55, 55, 0.95);
+  box-shadow: 0 0 38px rgba(255, 0, 0, 0.36), inset 0 0 24px rgba(255,0,0,.18);
+}
+
+.avatarEditHint {
+  position: absolute;
+  inset: auto 8px 8px 8px;
+  min-height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  background: rgba(255, 0, 0, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: 0.22s ease;
+  backdrop-filter: blur(8px);
+}
+
+.editableAvatar:hover .avatarEditHint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.memberImageSaveBtn {
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  border-radius: 14px !important;
+}
