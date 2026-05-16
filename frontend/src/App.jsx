@@ -344,7 +344,7 @@ function Home() {
     <>
       <BrandAssets logoUrl={siteLogoUrl} />
       <Navbar logoUrl={siteLogoUrl} />
-      <Hero />
+      <Hero logoUrl={siteLogoUrl} />
       <ClanInfo />
       <Identity />
       <Videos />
@@ -414,7 +414,7 @@ function Navbar({ logoUrl = logo }) {
   );
 }
 
-function Hero() {
+function Hero({ logoUrl = logo }) {
   return (
     <section className="hero" id="top">
       <div className="heroGrid" />
@@ -461,13 +461,8 @@ function Hero() {
       <div className="heroArt" aria-hidden="true">
         <div className="heroBlade bladeOne" />
         <div className="heroBlade bladeTwo" />
-        <div className="heroOrb">
-          <div className="rnmHeroSlash" />
-          <div className="rnmHeroLetters" aria-label="RNM">
-            <span>R</span>
-            <span>N</span>
-            <span>M</span>
-          </div>
+        <div className="heroOrb heroLogoOrb">
+          <img className="heroOrbLogoImg" src={logoUrl || logo} alt="RNM ESPORTS" />
         </div>
       </div>
     </section>
