@@ -76,9 +76,9 @@ function videoUrl(src) {
 
 function fallbackMainVideos() {
   return [
-    { id: "fallback-1", title: "أداء الأعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo1, label: "VIDEO 1", fallback: true },
-    { id: "fallback-2", title: "أداء الأعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo2, label: "VIDEO 2", fallback: true },
-    { id: "fallback-3", title: "أداء الأعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo3, label: "VIDEO 3", fallback: true },
+    { id: "fallback-1", title: "تحدي اداء الاعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo1, label: "VIDEO 1", fallback: true },
+    { id: "fallback-2", title: "تحدي اداء الاعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo2, label: "VIDEO 2", fallback: true },
+    { id: "fallback-3", title: "تحدي اداء الاعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo3, label: "VIDEO 3", fallback: true },
   ];
 }
 
@@ -373,7 +373,7 @@ function Navbar({ logoUrl = logo }) {
     ["الكلان", "#clan"],
     ["أعضاء الكلان", "/members"],
     ["الفيديوهات", "#videos"],
-    ["التصاميم", "#designs"],
+    ["المسابقات", "#designs"],
     ["التقديم", "#apply"],
   ];
 
@@ -653,7 +653,7 @@ function Videos() {
       <section className="section" id="designs">
         <div className="sectionHead">
           <span>RNM DESIGNS</span>
-          <h2>قسم التصاميم</h2>
+          <h2>قسم المسابقات</h2>
           <p>
             الفيديوهات المقبولة من الإدارة تظهر هنا كتصاميم وإبداعات خاصة بالكلان.
           </p>
