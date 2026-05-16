@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from supabase import create_client, Client
 from datetime import datetime
 from urllib.parse import urlparse, unquote
@@ -18,6 +19,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
+@app.middleware("http")
+async def resilient_headers(request, call_next):
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Backend temporary error", "detail": str(exc)},
+        )
+
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["X-RNM-Backend"] = "online"
+    return response
+
+
+
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "application-videos")
@@ -25,6 +45,17 @@ SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "application-videos")
 supabase: Client | None = None
 if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
     supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+
+def reset_supabase_client() -> Client:
+    global supabase
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase env vars are missing: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY",
+        )
+    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    return supabase
 
 
 def get_supabase() -> Client:
@@ -223,9 +254,27 @@ def safe_remove_storage_file(video_url: str | None) -> None:
         pass
 
 
+def execute_with_retry(operation, label: str = "Supabase operation", attempts: int = 3):
+    last_error = None
+    for attempt in range(attempts):
+        try:
+            return operation(get_supabase())
+        except Exception as exc:
+            last_error = exc
+            if attempt < attempts - 1:
+                reset_supabase_client()
+                continue
+    raise HTTPException(status_code=500, detail=f"{label} failed: {last_error}")
+
+
 @app.get("/")
 def root():
     return {"message": "RANIME Gaming Backend Running With Supabase"}
+
+
+@app.get("/api/ping")
+def ping():
+    return {"success": True, "backend": "awake", "time": datetime.utcnow().isoformat()}
 
 
 @app.get("/api/health")

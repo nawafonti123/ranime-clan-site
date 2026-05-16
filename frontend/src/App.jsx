@@ -34,7 +34,17 @@ import logo from "./RNM.png";
 
 const API = (import.meta.env.VITE_API_URL || "https://ranime-clan-site.onrender.com").replace(/\/+$/, "");
 const MAX_CLAN_VIDEOS = 10;
-const REQUEST_TIMEOUT_MS = 35000;
+const REQUEST_TIMEOUT_MS = 45000;
+const MAX_REQUEST_RETRIES = 5;
+const KEEP_ALIVE_INTERVAL_MS = 240000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getBackoffMs(attempt) {
+  return Math.min(1200 * Math.pow(1.8, attempt), 8500) + Math.floor(Math.random() * 450);
+}
 
 function readCachedArray(key) {
   try {
@@ -54,19 +64,29 @@ function writeCachedArray(key, value) {
   }
 }
 
-async function fetchJson(endpoint, options = {}) {
+async function requestJson(endpoint, options = {}, config = {}) {
   const url = endpoint.startsWith("http") ? endpoint : `${API}${endpoint}`;
+  const method = String(options.method || "GET").toUpperCase();
+  const isReadRequest = method === "GET" || method === "HEAD";
+  const retries = Number.isFinite(config.retries)
+    ? config.retries
+    : (isReadRequest ? MAX_REQUEST_RETRIES : 2);
+
   let lastError = null;
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < retries; attempt += 1) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), config.timeout || REQUEST_TIMEOUT_MS);
 
     try {
       const res = await fetch(url, {
+        cache: "no-store",
+        mode: "cors",
+        credentials: "omit",
         ...options,
         signal: controller.signal,
         headers: {
+          Accept: "application/json",
           ...(options.headers || {}),
         },
       });
@@ -80,15 +100,24 @@ async function fetchJson(endpoint, options = {}) {
       }
 
       if (!res.ok) {
+        const retryable = [408, 425, 429, 500, 502, 503, 504].includes(res.status);
+        if (retryable && attempt < retries - 1) {
+          await sleep(getBackoffMs(attempt));
+          continue;
+        }
         throw new Error(json.detail || json.message || `HTTP ${res.status}`);
       }
 
       return json;
     } catch (error) {
       lastError = error;
-      if (attempt < 2) {
-        await new Promise((resolve) => setTimeout(resolve, 900 * (attempt + 1)));
+      const isAbort = error?.name === "AbortError";
+      const isNetwork = error instanceof TypeError || isAbort || /network|failed|fetch/i.test(String(error?.message || ""));
+      if ((isNetwork || isAbort) && attempt < retries - 1) {
+        await sleep(getBackoffMs(attempt));
+        continue;
       }
+      break;
     } finally {
       clearTimeout(timeout);
     }
@@ -97,6 +126,68 @@ async function fetchJson(endpoint, options = {}) {
   throw lastError || new Error("Request failed");
 }
 
+async function fetchJson(endpoint, options = {}) {
+  return requestJson(endpoint, options);
+}
+
+async function postFormJson(endpoint, formData, options = {}) {
+  return requestJson(endpoint, { method: options.method || "POST", body: formData }, { retries: options.retries ?? 2, timeout: options.timeout || 60000 });
+}
+
+async function deleteJson(endpoint) {
+  return requestJson(endpoint, { method: "DELETE" }, { retries: 3 });
+}
+
+function useBackendKeepAlive() {
+  const [connectionState, setConnectionState] = useState("checking");
+
+  useEffect(() => {
+    let alive = true;
+    let timer = null;
+
+    async function ping() {
+      try {
+        await requestJson("/api/health", { method: "GET" }, { retries: 2, timeout: 18000 });
+        if (alive) setConnectionState("online");
+      } catch (error) {
+        console.warn("Backend keep-alive failed:", error);
+        if (alive) setConnectionState("offline");
+      } finally {
+        if (alive) timer = setTimeout(ping, KEEP_ALIVE_INTERVAL_MS);
+      }
+    }
+
+    ping();
+
+    const onOnline = () => {
+      setConnectionState("checking");
+      ping();
+    };
+    const onOffline = () => setConnectionState("offline");
+
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+
+    return () => {
+      alive = false;
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
+  return connectionState;
+}
+
+function ConnectionBanner({ state }) {
+  if (state !== "offline") return null;
+
+  return (
+    <div className="connectionBanner">
+      الاتصال بالسيرفر ضعيف حالياً، سيتم استخدام آخر بيانات محفوظة وإعادة المحاولة تلقائياً.
+    </div>
+  );
+}
 
 function go(path) {
   window.history.pushState({}, "", path);
@@ -374,13 +465,8 @@ function Home() {
     setMessage("جاري رفع الطلب...");
 
     try {
-      const res = await fetch(`${API}/api/apply`, {
-        method: "POST",
-        body: data,
-      });
-
-      const json = await res.json();
-      setMessage(json.message);
+      const json = await postFormJson("/api/apply", data, { timeout: 90000 });
+      setMessage(json.message || "تم إرسال الطلب بنجاح");
 
       if (json.success) {
         setForm({
@@ -625,9 +711,11 @@ function Videos() {
 
     async function loadSiteVideos() {
       try {
+        const cachedSiteVideos = readCachedArray("rnm_cache_site_videos");
         const json = await fetchJson("/api/site-videos");
 
         if (!alive) return;
+        writeCachedArray("rnm_cache_site_videos", Array.isArray(json) ? json : []);
 
         const mapped = (Array.isArray(json) ? json : []).map((item, index) => ({
           id: item.id,
@@ -656,6 +744,23 @@ function Videos() {
         setUsingFallback(!monthlyWinners.length);
       } catch {
         if (!alive) return;
+        const cachedSiteVideos = readCachedArray("rnm_cache_site_videos");
+        if (cachedSiteVideos.length) {
+          const mapped = cachedSiteVideos.map((item, index) => ({
+            id: item.id,
+            title: item.title || "فيديو RNM",
+            description: item.description || "فيديو من إدارة الكلان",
+            src: videoUrl(item.video_url),
+            label: item.slot && item.slot >= 99 ? "DESIGN" : `VIDEO ${item.slot || index + 1}`,
+            slot: Number(item.slot || index + 1),
+            fallback: false,
+          }));
+          const sortedMapped = mapped.sort((a, b) => (a.slot || 1) - (b.slot || 1) || String(a.id).localeCompare(String(b.id)));
+          setVideos(sortedMapped.filter((v) => [1, 2, 3].includes(Number(v.slot || 0))).slice(0, 3));
+          setDesigns(sortedMapped.filter((v) => Number(v.slot || 1) >= 99));
+          setUsingFallback(false);
+          return;
+        }
         setVideos(
           fallbackMainVideos().map((item, index) => ({
             ...item,
@@ -855,20 +960,9 @@ function VideoRequestSection() {
     setMessage("جاري إرسال الفيديو للإدارة...");
 
     try {
-      const res = await fetch(`${API}/api/video-requests`, {
-        method: "POST",
-        body: data,
-      });
+      const json = await postFormJson("/api/video-requests", data, { timeout: 120000 });
 
-      const text = await res.text();
-      let json = {};
-      try {
-        json = text ? JSON.parse(text) : {};
-      } catch {
-        json = {};
-      }
-
-      if (!res.ok || json.success === false) {
+      if (json.success === false) {
         setMessage(json.message || json.detail || "فشل إرسال الفيديو");
         return;
       }
@@ -1067,7 +1161,26 @@ function Admin() {
   const [adminApiStatus, setAdminApiStatus] = useState("");
 
   useEffect(() => {
-    if (allowed) loadAdminData();
+    if (!allowed) return;
+
+    let stopped = false;
+    loadAdminData();
+
+    const interval = setInterval(() => {
+      if (!stopped) loadAdminData();
+    }, 60000);
+
+    const onFocus = () => loadAdminData();
+    const onOnline = () => loadAdminData();
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onOnline);
+
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onOnline);
+    };
   }, [allowed]);
 
   async function loadCachedAdminArray(cacheKey, endpoint, setter, label) {
@@ -1082,9 +1195,8 @@ function Admin() {
       return true;
     } catch (error) {
       console.error(`${label} load failed:`, error);
-      if (!cached.length) setter([]);
       setAdminApiStatus(
-        `تعذر جلب ${label} من السيرفر. يتم عرض آخر بيانات محفوظة إن وجدت. افحص Render/Supabase و VITE_API_URL.`
+        `تعذر جلب ${label} من السيرفر. سيتم عرض آخر بيانات محفوظة وإعادة المحاولة تلقائياً.`
       );
       return false;
     }
@@ -1137,14 +1249,9 @@ function Admin() {
     setManualMemberMessage("جاري إضافة العضو...");
 
     try {
-      const res = await fetch(`${API}/api/clan-members`, {
-        method: "POST",
-        body: data,
-      });
+      const json = await postFormJson("/api/clan-members", data, { timeout: 90000 });
 
-      const json = await res.json().catch(() => ({}));
-
-      if (!res.ok || json.success === false) {
+      if (json.success === false) {
         setManualMemberMessage(json.message || json.detail || "فشل إضافة العضو");
         return;
       }
@@ -1175,14 +1282,8 @@ function Admin() {
     setLogoMessage("جاري تغيير اللوجو...");
 
     try {
-      const res = await fetch(`${API}/api/site-logo`, {
-        method: "POST",
-        body: data,
-      });
-
-      const json = await res.json().catch(() => ({}));
-
-      if (!res.ok || json.success === false) {
+      const json = await postFormJson("/api/site-logo", data, { timeout: 90000 });
+      if (json.success === false) {
         setLogoMessage(json.message || json.detail || "فشل تغيير اللوجو");
         return;
       }
@@ -1213,14 +1314,8 @@ function Admin() {
     setMembersImportMessage("جاري استيراد أعضاء الكلان...");
 
     try {
-      const res = await fetch(`${API}/api/clan-members/import`, {
-        method: "POST",
-        body: data,
-      });
-
-      const json = await res.json().catch(() => ({}));
-
-      if (!res.ok || json.success === false) {
+      const json = await postFormJson("/api/clan-members/import", data, { timeout: 90000 });
+      if (json.success === false) {
         setMembersImportMessage(json.message || json.detail || "فشل استيراد الأعضاء");
         return;
       }
@@ -1241,9 +1336,8 @@ function Admin() {
     data.append("clan_rank", rank);
 
     try {
-      const res = await fetch(`${API}/api/applications/${id}/approve`, { method: "POST", body: data });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || json.success === false) {
+      const json = await postFormJson(`/api/applications/${id}/approve`, data, { timeout: 90000 });
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل قبول اللاعب");
         return;
       }
@@ -1258,9 +1352,8 @@ function Admin() {
     const data = new FormData();
     data.append("clan_rank", rank);
     try {
-      const res = await fetch(`${API}/api/clan-members/${id}`, { method: "PUT", body: data });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || json.success === false) {
+      const json = await postFormJson(`/api/clan-members/${id}`, data, { method: "PUT", timeout: 90000 });
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل تحديث العضو");
         return;
       }
@@ -1282,9 +1375,8 @@ function Admin() {
     data.append("clan_rank", member.clan_rank || "member");
 
     try {
-      const res = await fetch(`${API}/api/clan-members/${member.id}`, { method: "PUT", body: data });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || json.success === false) {
+      const json = await postFormJson(`/api/clan-members/${member.id}`, data, { method: "PUT", timeout: 90000 });
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل تحديث اسم العضو");
         return false;
       }
@@ -1309,9 +1401,8 @@ function Admin() {
 
     setSavingMemberImageId(member.id);
     try {
-      const res = await fetch(`${API}/api/clan-members/${member.id}`, { method: "PUT", body: data });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || json.success === false) {
+      const json = await postFormJson(`/api/clan-members/${member.id}`, data, { method: "PUT", timeout: 90000 });
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل تحديث صورة العضو");
         return;
       }
@@ -1332,9 +1423,8 @@ function Admin() {
     const ok = window.confirm("هل تريد إزالة هذا العضو من هرم الكلان؟");
     if (!ok) return;
     try {
-      const res = await fetch(`${API}/api/clan-members/${id}`, { method: "DELETE" });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || json.success === false) {
+      const json = await deleteJson(`/api/clan-members/${id}`);
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل إزالة العضو");
         return;
       }
@@ -1351,13 +1441,9 @@ function Admin() {
     setDeletingId(id);
 
     try {
-      const res = await fetch(`${API}/api/applications/${id}`, {
-        method: "DELETE",
-      });
+      const json = await deleteJson(`/api/applications/${id}`);
 
-      const json = await res.json().catch(() => ({}));
-
-      if (!res.ok || json.success === false) {
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل حذف الطلب");
         return;
       }
@@ -1391,14 +1477,9 @@ function Admin() {
         ? `${API}/api/site-videos/${videoForm.id}`
         : `${API}/api/site-videos`;
 
-      const res = await fetch(url, {
-        method: videoForm.id ? "PUT" : "POST",
-        body: data,
-      });
+      const json = await postFormJson(videoForm.id ? `/api/site-videos/${videoForm.id}` : "/api/site-videos", data, { method: videoForm.id ? "PUT" : "POST", timeout: 120000 });
 
-      const json = await res.json().catch(() => ({}));
-
-      if (!res.ok || json.success === false) {
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل حفظ الفيديو");
         return;
       }
@@ -1430,12 +1511,9 @@ function Admin() {
     if (!ok) return;
 
     try {
-      const res = await fetch(`${API}/api/site-videos/${id}`, {
-        method: "DELETE",
-      });
-      const json = await res.json().catch(() => ({}));
+      const json = await deleteJson(`/api/site-videos/${id}`);
 
-      if (!res.ok || json.success === false) {
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل حذف الفيديو");
         return;
       }
@@ -1465,13 +1543,9 @@ function Admin() {
     data.append("slot", String(position));
 
     try {
-      const res = await fetch(`${API}/api/site-videos/${videoItem.id}`, {
-        method: "PUT",
-        body: data,
-      });
-      const json = await res.json().catch(() => ({}));
+      const json = await postFormJson(`/api/site-videos/${videoItem.id}`, data, { method: "PUT", timeout: 90000 });
 
-      if (!res.ok || json.success === false) {
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل تحويل الفيديو للمسابقة الشهرية");
         return;
       }
@@ -1488,12 +1562,9 @@ function Admin() {
     if (!ok) return;
 
     try {
-      const res = await fetch(`${API}/api/video-requests/${id}/${action}`, {
-        method: "POST",
-      });
-      const json = await res.json().catch(() => ({}));
+      const json = await requestJson(`/api/video-requests/${id}/${action}`, { method: "POST" }, { retries: 3, timeout: 90000 });
 
-      if (!res.ok || json.success === false) {
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل تنفيذ العملية");
         return;
       }
@@ -1514,12 +1585,9 @@ function Admin() {
     if (!ok) return;
 
     try {
-      const res = await fetch(`${API}/api/video-requests/${id}`, {
-        method: "DELETE",
-      });
-      const json = await res.json().catch(() => ({}));
+      const json = await deleteJson(`/api/video-requests/${id}`);
 
-      if (!res.ok || json.success === false) {
+      if (json.success === false) {
         alert(json.message || json.detail || "فشل حذف الطلب");
         return;
       }
@@ -2199,7 +2267,7 @@ function ClanMembersPage() {
         writeCachedArray("rnm_cache_clan_members", list);
         if (alive) setMembers(list);
       } catch {
-        if (alive) setMembers([]);
+        // لا نفرغ الصفحة عند انقطاع السيرفر؛ نبقي آخر بيانات محفوظة.
       } finally {
         if (alive) setLoading(false);
       }
@@ -2252,10 +2320,14 @@ function Footer({ logoUrl = logo }) {
 function App() {
   const path = useRoute();
   const cleanPath = path.replace(/\/+$/, "") || "/";
+  const connectionState = useBackendKeepAlive();
 
-  if (cleanPath === "/admin") return <Admin />;
-  if (cleanPath === "/members") return <ClanMembersPage />;
-  return <Home />;
+  return (
+    <>
+      <ConnectionBanner state={connectionState} />
+      {cleanPath === "/admin" ? <Admin /> : cleanPath === "/members" ? <ClanMembersPage /> : <Home />}
+    </>
+  );
 }
 
 createRoot(document.getElementById("root")).render(<App />);

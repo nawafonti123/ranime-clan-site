@@ -3857,3 +3857,33 @@ body:has(.adminDashboard) {
   text-align: center;
 }
 
+
+
+/* CONNECTION RESILIENCE */
+.connectionBanner {
+  position: fixed;
+  top: 92px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999999;
+  max-width: min(680px, calc(100vw - 32px));
+  padding: 12px 20px;
+  border-radius: 999px;
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgba(255, 0, 0, 0.88), rgba(40, 0, 0, 0.96)),
+    rgba(0, 0, 0, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 35px rgba(255, 0, 0, 0.35);
+  font-weight: 900;
+  text-align: center;
+  backdrop-filter: blur(16px);
+}
+
+@media (max-width: 760px) {
+  .connectionBanner {
+    top: 82px;
+    font-size: 12px;
+    border-radius: 18px;
+  }
+}
