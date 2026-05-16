@@ -295,10 +295,23 @@ def health_check():
         info["message"] = "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY on Render"
         return info
 
-    sb = get_supabase()
-    for table in ["applications", "clan_members", "video_requests", "site_videos", "site_settings"]:
+    health_tables = {
+        "applications": "id",
+        "clan_members": "id",
+        "video_requests": "id",
+        "site_videos": "id",
+        # جدول site_settings عندك مبني على key/value وليس id
+        "site_settings": "key",
+    }
+
+    for table, column in health_tables.items():
         try:
-            result = sb.table(table).select("id", count="exact").limit(1).execute()
+            result = execute_with_retry(
+                lambda sb, table=table, column=column: (
+                    sb.table(table).select(column, count="exact").limit(1).execute()
+                ),
+                label=f"Health check {table}",
+            )
             info["tables"][table] = {
                 "ok": True,
                 "count": result.count if result.count is not None else 0,
