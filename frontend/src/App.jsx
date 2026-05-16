@@ -32,8 +32,71 @@ import clanVideo2 from "./VID-2.mp4";
 import clanVideo3 from "./VID-3.mp4";
 import logo from "./RNM.png";
 
-const API = import.meta.env.VITE_API_URL || "https://ranime-clan-site.onrender.com";
+const API = (import.meta.env.VITE_API_URL || "https://ranime-clan-site.onrender.com").replace(/\/+$/, "");
 const MAX_CLAN_VIDEOS = 10;
+const REQUEST_TIMEOUT_MS = 35000;
+
+function readCachedArray(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedArray(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(Array.isArray(value) ? value : []));
+  } catch {
+    // تجاهل فشل التخزين المحلي
+  }
+}
+
+async function fetchJson(endpoint, options = {}) {
+  const url = endpoint.startsWith("http") ? endpoint : `${API}${endpoint}`;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const res = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          ...(options.headers || {}),
+        },
+      });
+
+      const text = await res.text();
+      let json = {};
+      try {
+        json = text ? JSON.parse(text) : {};
+      } catch {
+        json = { raw: text };
+      }
+
+      if (!res.ok) {
+        throw new Error(json.detail || json.message || `HTTP ${res.status}`);
+      }
+
+      return json;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 900 * (attempt + 1)));
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw lastError || new Error("Request failed");
+}
+
 
 function go(path) {
   window.history.pushState({}, "", path);
@@ -96,9 +159,7 @@ function useSiteLogo() {
 
     async function loadSiteLogo() {
       try {
-        const res = await fetch(`${API}/api/site-settings`);
-        if (!res.ok) throw new Error("settings");
-        const json = await res.json();
+        const json = await fetchJson("/api/site-settings");
         const nextLogo = normalizeAssetUrl(json.logo_url || json.site_logo_url || "");
         if (alive) setSiteLogoUrl(nextLogo || logo);
       } catch {
@@ -564,9 +625,7 @@ function Videos() {
 
     async function loadSiteVideos() {
       try {
-        const res = await fetch(`${API}/api/site-videos`);
-        if (!res.ok) throw new Error("backend");
-        const json = await res.json();
+        const json = await fetchJson("/api/site-videos");
 
         if (!alive) return;
 
@@ -1005,49 +1064,59 @@ function Admin() {
   const [logoFile, setLogoFile] = useState(null);
   const [logoMessage, setLogoMessage] = useState("");
   const [savingLogo, setSavingLogo] = useState(false);
+  const [adminApiStatus, setAdminApiStatus] = useState("");
 
   useEffect(() => {
     if (allowed) loadAdminData();
   }, [allowed]);
 
+  async function loadCachedAdminArray(cacheKey, endpoint, setter, label) {
+    const cached = readCachedArray(cacheKey);
+    if (cached.length) setter(cached);
+
+    try {
+      const json = await fetchJson(endpoint);
+      const list = Array.isArray(json) ? json : [];
+      setter(list);
+      writeCachedArray(cacheKey, list);
+      return true;
+    } catch (error) {
+      console.error(`${label} load failed:`, error);
+      if (!cached.length) setter([]);
+      setAdminApiStatus(
+        `تعذر جلب ${label} من السيرفر. يتم عرض آخر بيانات محفوظة إن وجدت. افحص Render/Supabase و VITE_API_URL.`
+      );
+      return false;
+    }
+  }
+
   async function loadAdminData() {
-    await Promise.all([loadApps(), loadSiteVideos(), loadVideoRequests(), loadClanMembers()]);
+    setAdminApiStatus("جاري الاتصال بالسيرفر...");
+    const results = await Promise.allSettled([
+      loadApps(),
+      loadSiteVideos(),
+      loadVideoRequests(),
+      loadClanMembers(),
+    ]);
+
+    const hasFail = results.some((item) => item.status === "rejected" || item.value === false);
+    if (!hasFail) setAdminApiStatus("");
   }
 
   async function loadApps() {
-    const res = await fetch(`${API}/api/applications`);
-    const json = await res.json();
-    setApps(Array.isArray(json) ? json : []);
+    return loadCachedAdminArray("rnm_cache_applications", "/api/applications", setApps, "طلبات التقديم");
   }
 
   async function loadSiteVideos() {
-    try {
-      const res = await fetch(`${API}/api/site-videos`);
-      const json = await res.json();
-      setSiteVideos(Array.isArray(json) ? json : []);
-    } catch {
-      setSiteVideos([]);
-    }
+    return loadCachedAdminArray("rnm_cache_site_videos", "/api/site-videos", setSiteVideos, "فيديوهات الموقع");
   }
 
   async function loadVideoRequests() {
-    try {
-      const res = await fetch(`${API}/api/video-requests`);
-      const json = await res.json();
-      setVideoRequests(Array.isArray(json) ? json : []);
-    } catch {
-      setVideoRequests([]);
-    }
+    return loadCachedAdminArray("rnm_cache_video_requests", "/api/video-requests", setVideoRequests, "طلبات التصاميم");
   }
 
   async function loadClanMembers() {
-    try {
-      const res = await fetch(`${API}/api/clan-members`);
-      const json = await res.json();
-      setClanMembers(Array.isArray(json) ? json : []);
-    } catch {
-      setClanMembers([]);
-    }
+    return loadCachedAdminArray("rnm_cache_clan_members", "/api/clan-members", setClanMembers, "أعضاء الكلان");
   }
 
   async function addManualClanMember(e) {
@@ -1549,6 +1618,7 @@ function Admin() {
       </aside>
 
       <section className="adminContent">
+        {adminApiStatus && <div className="adminApiNotice">{adminApiStatus}</div>}
         {adminTab === "applications" && (
           <>
             <div className="adminTop">
@@ -2121,9 +2191,13 @@ function ClanMembersPage() {
     let alive = true;
     async function loadMembers() {
       try {
-        const res = await fetch(`${API}/api/clan-members`);
-        const json = await res.json();
-        if (alive) setMembers(Array.isArray(json) ? json : []);
+        const cached = readCachedArray("rnm_cache_clan_members");
+        if (alive && cached.length) setMembers(cached);
+
+        const json = await fetchJson("/api/clan-members");
+        const list = Array.isArray(json) ? json : [];
+        writeCachedArray("rnm_cache_clan_members", list);
+        if (alive) setMembers(list);
       } catch {
         if (alive) setMembers([]);
       } finally {

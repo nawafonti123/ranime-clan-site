@@ -228,6 +228,39 @@ def root():
     return {"message": "RANIME Gaming Backend Running With Supabase"}
 
 
+@app.get("/api/health")
+def health_check():
+    """Quick deployment check for Vercel/Render/Supabase connection."""
+    info = {
+        "success": True,
+        "backend": "running",
+        "supabase_url_configured": bool(SUPABASE_URL),
+        "supabase_key_configured": bool(SUPABASE_SERVICE_ROLE_KEY),
+        "bucket": SUPABASE_BUCKET,
+        "time": datetime.utcnow().isoformat(),
+        "tables": {},
+    }
+
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        info["success"] = False
+        info["message"] = "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY on Render"
+        return info
+
+    sb = get_supabase()
+    for table in ["applications", "clan_members", "video_requests", "site_videos", "site_settings"]:
+        try:
+            result = sb.table(table).select("id", count="exact").limit(1).execute()
+            info["tables"][table] = {
+                "ok": True,
+                "count": result.count if result.count is not None else 0,
+            }
+        except Exception as e:
+            info["success"] = False
+            info["tables"][table] = {"ok": False, "error": str(e)}
+
+    return info
+
+
 @app.post("/api/apply")
 async def apply_to_clan(
     player_name: str = Form(...),
