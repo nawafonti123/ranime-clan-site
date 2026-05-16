@@ -3095,3 +3095,85 @@ select option {
     grid-column: span 1;
   }
 }
+
+/* =========================================
+   ADMIN SIDEBAR FINAL SCROLL FIX
+   يمنع قص السايد بار ويخلي السكرول من الصفحة نفسها
+   ========================================= */
+@media (min-width: 1101px) {
+  html:has(.adminDashboard),
+  body:has(.adminDashboard) {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .adminDashboard {
+    min-height: 100vh !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    align-items: start !important;
+  }
+
+  .adminSide {
+    position: sticky !important;
+    top: 0 !important;
+    align-self: start !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 14px 18px 22px !important;
+  }
+
+  .adminSide::-webkit-scrollbar {
+    width: 0 !important;
+    display: none !important;
+  }
+
+  .adminSide {
+    scrollbar-width: none !important;
+  }
+
+  .sideBrand {
+    padding: 13px 10px 14px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .sideBrand .adminSideLogoImg {
+    width: 76px !important;
+    height: 76px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .sideBrand h2 {
+    font-size: 34px !important;
+  }
+
+  .sideBrand span {
+    font-size: 10px !important;
+    letter-spacing: 4px !important;
+  }
+
+  .adminSide button {
+    min-height: 46px !important;
+    margin-top: 9px !important;
+    padding: 9px 10px !important;
+    font-size: 15px !important;
+  }
+
+  .sideStat {
+    margin-top: 9px !important;
+    padding: 10px 8px !important;
+  }
+
+  .sideStat b {
+    font-size: 28px !important;
+  }
+
+  .sideStat span {
+    font-size: 11px !important;
+  }
+}
