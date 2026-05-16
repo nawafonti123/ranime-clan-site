@@ -495,6 +495,7 @@ def approve_application_as_member(
 @app.put("/api/clan-members/{member_id}")
 async def update_clan_member(
     member_id: int,
+    player_name: str | None = Form(None),
     clan_rank: str = Form("member"),
     custom_title: str = Form(""),
     is_active: bool = Form(True),
@@ -519,6 +520,12 @@ async def update_clan_member(
         "rank_order": RANK_ORDER_MAP[clan_rank],
         "is_active": is_active,
     }
+
+    clean_player_name = (player_name or "").strip()
+    if player_name is not None:
+        if not clean_player_name:
+            raise HTTPException(status_code=400, detail="اسم العضو مطلوب")
+        updates["player_name"] = clean_player_name
 
     old_image_url = found.data[0].get("profile_image_url")
     new_image_url = None

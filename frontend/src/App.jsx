@@ -1201,6 +1201,32 @@ function Admin() {
     }
   }
 
+  async function updateClanMemberName(member, nextName) {
+    const cleanName = String(nextName || "").trim();
+    if (!cleanName) {
+      alert("اكتب اسم العضو أولاً");
+      return false;
+    }
+
+    const data = new FormData();
+    data.append("player_name", cleanName);
+    data.append("clan_rank", member.clan_rank || "member");
+
+    try {
+      const res = await fetch(`${API}/api/clan-members/${member.id}`, { method: "PUT", body: data });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        alert(json.message || json.detail || "فشل تحديث اسم العضو");
+        return false;
+      }
+      await loadClanMembers();
+      return true;
+    } catch {
+      alert("حدث خطأ أثناء تحديث اسم العضو");
+      return false;
+    }
+  }
+
   async function updateClanMemberImage(member) {
     const file = memberImageFiles[member.id];
     if (!file) {
@@ -1718,6 +1744,7 @@ function Admin() {
               savingMemberImageId={savingMemberImageId}
               onImageSelect={(id, file) => setMemberImageFiles((prev) => ({ ...prev, [id]: file }))}
               onImageSave={updateClanMemberImage}
+              onNameSave={updateClanMemberName}
             />
           </>
         )}
@@ -1966,7 +1993,30 @@ const rankLabels = {
 
 const rankOrder = ["leader", "co_leader", "elite", "member"];
 
-function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemove, memberImageFiles = {}, onImageSelect, onImageSave, savingMemberImageId }) {
+function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemove, memberImageFiles = {}, onImageSelect, onImageSave, savingMemberImageId, onNameSave }) {
+  const [editingNameId, setEditingNameId] = useState(null);
+  const [editingNameValue, setEditingNameValue] = useState("");
+  const [savingNameId, setSavingNameId] = useState(null);
+
+  const startEditName = (member) => {
+    if (!adminMode) return;
+    setEditingNameId(member.id);
+    setEditingNameValue(member.player_name || "");
+  };
+
+  const cancelEditName = () => {
+    setEditingNameId(null);
+    setEditingNameValue("");
+  };
+
+  const saveEditName = async (member) => {
+    if (!onNameSave) return;
+    setSavingNameId(member.id);
+    const ok = await onNameSave(member, editingNameValue);
+    setSavingNameId(null);
+    if (ok) cancelEditName();
+  };
+
   const grouped = rankOrder.map((rank) => ({
     rank,
     label: rankLabels[rank],
@@ -2004,7 +2054,34 @@ function ClanMembersHierarchy({ members, adminMode = false, onRankChange, onRemo
                   )}
                 </label>
 
-                <h3>{member.player_name}</h3>
+                {adminMode && editingNameId === member.id ? (
+                  <div className="memberNameEditBox">
+                    <input
+                      value={editingNameValue}
+                      onChange={(e) => setEditingNameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveEditName(member);
+                        if (e.key === "Escape") cancelEditName();
+                      }}
+                      autoFocus
+                      placeholder="اسم العضو"
+                    />
+                    <div className="memberNameEditActions">
+                      <button type="button" className="mainBtn miniMemberBtn" onClick={() => saveEditName(member)} disabled={savingNameId === member.id}>
+                        {savingNameId === member.id ? "جاري..." : "حفظ"}
+                      </button>
+                      <button type="button" className="ghostBtn miniMemberBtn" onClick={cancelEditName}>إلغاء</button>
+                    </div>
+                  </div>
+                ) : (
+                  <h3
+                    className={adminMode ? "editableMemberName" : ""}
+                    title={adminMode ? "اضغط لتعديل اسم العضو" : member.player_name}
+                    onClick={() => startEditName(member)}
+                  >
+                    {member.player_name}
+                  </h3>
+                )}
                 <span className="memberRank">{member.clan_title || group.label}</span>
 
 

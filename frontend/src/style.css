@@ -3777,3 +3777,67 @@ body:has(.adminDashboard) {
     transform: none;
   }
 }
+
+
+/* EDIT MEMBER NAME */
+.editableMemberName {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  transition: 0.22s ease;
+}
+
+.editableMemberName::after {
+  content: "تعديل";
+  font-size: 11px;
+  color: #ff2a2a;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 0, 0, 0.35);
+  background: rgba(255, 0, 0, 0.08);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: 0.22s ease;
+}
+
+.editableMemberName:hover {
+  color: #fff;
+  background: rgba(255, 0, 0, 0.11);
+  box-shadow: 0 0 22px rgba(255, 0, 0, 0.22);
+}
+
+.editableMemberName:hover::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.memberNameEditBox {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 8px;
+}
+
+.memberNameEditBox input {
+  text-align: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 900;
+}
+
+.memberNameEditActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.miniMemberBtn {
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
