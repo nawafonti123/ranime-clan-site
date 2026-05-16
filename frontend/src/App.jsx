@@ -76,9 +76,9 @@ function videoUrl(src) {
 
 function fallbackMainVideos() {
   return [
-    { id: "fallback-1", title: "تحدي اداء الاعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo1, label: "VIDEO 1", fallback: true },
-    { id: "fallback-2", title: "تحدي اداء الاعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo2, label: "VIDEO 2", fallback: true },
-    { id: "fallback-3", title: "تحدي اداء الاعضاء", description: "فيديو يظهر اداء الكلان ", src: clanVideo3, label: "VIDEO 3", fallback: true },
+    { id: "fallback-1", title: "تحدي اداء الاعضاء", description: "مسابقة شهريه لافضل اداء داخل الكلان ", src: clanVideo1, label: "VIDEO 1", fallback: true },
+    { id: "fallback-2", title: "تحدي اداء الاعضاء", description: "مسابقة شهريه لافضل اداء داخل الكلان ", src: clanVideo2, label: "VIDEO 2", fallback: true },
+    { id: "fallback-3", title: "تحدي اداء الاعضاء", description: "مسابقة شهريه لافضل اداء داخل الكلان ", src: clanVideo3, label: "VIDEO 3", fallback: true },
   ];
 }
 
@@ -634,9 +634,9 @@ function Videos() {
       <section className="section" id="videos">
         <div className="sectionHead">
           <span>CLAN MEDIA</span>
-          <h2>فيديوهات الكلان</h2>
+          <h2>مسابقه شهريه لافضل اداء داخل الكلان</h2>
           <p>
-            الإدارة تقدر تضيف حتى 10 فيديوهات للكلان بنفس الترتيب، 3 فيديوهات في كل سطر. وإذا تعطل الباك اند تظهر الفيديوهات الأصلية تلقائياً.
+           هنا يتم اختيار افضل اداء لكل شهر بنائا على قرار الاداره
           </p>
           {usingFallback && (
             <div className="fallbackNotice">
