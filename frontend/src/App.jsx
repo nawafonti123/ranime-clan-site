@@ -242,6 +242,46 @@ function normalizeAssetUrl(src) {
   return String(src).startsWith("http") ? src : `${API}${src}`;
 }
 
+const PRIZE_MARKER = "__RNM_PRIZE__:";
+
+function splitVideoDescription(rawDescription = "", directPrize = "") {
+  const text = String(rawDescription || "");
+  const markerIndex = text.lastIndexOf(PRIZE_MARKER);
+  const prizeFromColumn = String(directPrize || "").trim();
+
+  if (markerIndex >= 0) {
+    return {
+      description: text.slice(0, markerIndex).trim(),
+      prize: prizeFromColumn || text.slice(markerIndex + PRIZE_MARKER.length).trim(),
+    };
+  }
+
+  return { description: text.trim(), prize: prizeFromColumn };
+}
+
+function cleanVideoDescription(item) {
+  return splitVideoDescription(item?.description, item?.prize).description;
+}
+
+function getVideoPrize(item) {
+  return splitVideoDescription(item?.description, item?.prize).prize;
+}
+
+function mapSiteVideoItem(item, index = 0) {
+  const parsed = splitVideoDescription(item?.description, item?.prize);
+  return {
+    id: item.id,
+    title: item.title || "فيديو RNM",
+    description: parsed.description || "فيديو من إدارة الكلان",
+    prize: parsed.prize || "",
+    src: videoUrl(item.video_url),
+    video_url: item.video_url,
+    label: item.slot && item.slot >= 99 ? "DESIGN" : `VIDEO ${item.slot || index + 1}`,
+    slot: Number(item.slot || index + 1),
+    fallback: false,
+  };
+}
+
 function useSiteLogo() {
   const [siteLogoUrl, setSiteLogoUrl] = useState(logo);
 
@@ -717,15 +757,7 @@ function Videos() {
         if (!alive) return;
         writeCachedArray("rnm_cache_site_videos", Array.isArray(json) ? json : []);
 
-        const mapped = (Array.isArray(json) ? json : []).map((item, index) => ({
-          id: item.id,
-          title: item.title || "فيديو RNM",
-          description: item.description || "فيديو من إدارة الكلان",
-          src: videoUrl(item.video_url),
-          label: item.slot && item.slot >= 99 ? "DESIGN" : `VIDEO ${item.slot || index + 1}`,
-          slot: Number(item.slot || index + 1),
-          fallback: false,
-        }));
+        const mapped = (Array.isArray(json) ? json : []).map(mapSiteVideoItem);
 
         const sortedMapped = mapped.sort((a, b) => (a.slot || 1) - (b.slot || 1) || String(a.id).localeCompare(String(b.id)));
         const monthlyWinners = sortedMapped
@@ -746,15 +778,7 @@ function Videos() {
         if (!alive) return;
         const cachedSiteVideos = readCachedArray("rnm_cache_site_videos");
         if (cachedSiteVideos.length) {
-          const mapped = cachedSiteVideos.map((item, index) => ({
-            id: item.id,
-            title: item.title || "فيديو RNM",
-            description: item.description || "فيديو من إدارة الكلان",
-            src: videoUrl(item.video_url),
-            label: item.slot && item.slot >= 99 ? "DESIGN" : `VIDEO ${item.slot || index + 1}`,
-            slot: Number(item.slot || index + 1),
-            fallback: false,
-          }));
+          const mapped = cachedSiteVideos.map(mapSiteVideoItem);
           const sortedMapped = mapped.sort((a, b) => (a.slot || 1) - (b.slot || 1) || String(a.id).localeCompare(String(b.id)));
           setVideos(sortedMapped.filter((v) => [1, 2, 3].includes(Number(v.slot || 0))).slice(0, 3));
           setDesigns(sortedMapped.filter((v) => Number(v.slot || 1) >= 99));
@@ -856,6 +880,13 @@ function Videos() {
           <span>{rankText}</span>
           <h3>{item.title}</h3>
           <p>{item.description || "أفضل أداء تم اختياره من إدارة الكلان لهذا الشهر."}</p>
+          {item.prize && (
+            <div className="winnerPrizeBadge">
+              <Trophy size={18} />
+              <span>الجائزة</span>
+              <b>{item.prize}</b>
+            </div>
+          )}
         </div>
 
         <div className="podiumBase">
@@ -1159,6 +1190,14 @@ function Admin() {
   const [logoMessage, setLogoMessage] = useState("");
   const [savingLogo, setSavingLogo] = useState(false);
   const [adminApiStatus, setAdminApiStatus] = useState("");
+  const [winnerModal, setWinnerModal] = useState({
+    open: false,
+    video: null,
+    position: "1",
+    prize: "",
+    saving: false,
+    message: "",
+  });
 
   useEffect(() => {
     if (!allowed) return;
@@ -1499,7 +1538,7 @@ function Admin() {
     setVideoForm({
       id: item.id,
       title: item.title || "",
-      description: item.description || "",
+      description: cleanVideoDescription(item) || "",
       slot: item.slot || 1,
       file: null,
     });
@@ -1524,36 +1563,56 @@ function Admin() {
     }
   }
 
-  async function moveToMonthlyWinner(videoItem) {
-    const rawPosition = window.prompt("اختر مركز الفيديو الفائز: 1 أو 2 أو 3", "1");
-    if (rawPosition === null) return;
+  function moveToMonthlyWinner(videoItem) {
+    setWinnerModal({
+      open: true,
+      video: videoItem,
+      position: String([1, 2, 3].includes(Number(videoItem.slot)) ? videoItem.slot : 1),
+      prize: getVideoPrize(videoItem) || "",
+      saving: false,
+      message: "",
+    });
+  }
 
-    const position = Number(rawPosition);
+  async function confirmMonthlyWinner(e) {
+    e.preventDefault();
+
+    const videoItem = winnerModal.video;
+    const position = Number(winnerModal.position);
+    const prize = String(winnerModal.prize || "").trim();
+
+    if (!videoItem) return;
+
     if (![1, 2, 3].includes(position)) {
-      alert("المركز يجب أن يكون 1 أو 2 أو 3 فقط");
+      setWinnerModal((prev) => ({ ...prev, message: "المركز يجب أن يكون الأول أو الثاني أو الثالث فقط" }));
       return;
     }
 
-    const ok = window.confirm(`تحويل هذا الفيديو إلى المركز ${position} في المسابقة الشهرية؟ سيتم استبدال أي فيديو موجود بنفس المركز.`);
-    if (!ok) return;
+    if (!prize) {
+      setWinnerModal((prev) => ({ ...prev, message: "اكتب جائزة الفائز أولاً" }));
+      return;
+    }
 
     const data = new FormData();
     data.append("title", videoItem.title || "فيديو فائز");
-    data.append("description", videoItem.description || "");
+    data.append("description", cleanVideoDescription(videoItem) || "");
     data.append("slot", String(position));
+    data.append("prize", prize);
+
+    setWinnerModal((prev) => ({ ...prev, saving: true, message: "جاري اعتماد الفائز..." }));
 
     try {
       const json = await postFormJson(`/api/site-videos/${videoItem.id}`, data, { method: "PUT", timeout: 90000 });
 
       if (json.success === false) {
-        alert(json.message || json.detail || "فشل تحويل الفيديو للمسابقة الشهرية");
+        setWinnerModal((prev) => ({ ...prev, saving: false, message: json.message || json.detail || "فشل تحويل الفيديو للمسابقة الشهرية" }));
         return;
       }
 
       await loadSiteVideos();
-      alert(json.message || "تم تحويل الفيديو إلى قسم المسابقة الشهرية");
+      setWinnerModal({ open: false, video: null, position: "1", prize: "", saving: false, message: "" });
     } catch {
-      alert("حدث خطأ أثناء تحويل الفيديو");
+      setWinnerModal((prev) => ({ ...prev, saving: false, message: "حدث خطأ أثناء تحويل الفيديو" }));
     }
   }
 
@@ -1960,7 +2019,8 @@ function Admin() {
                     <Video />
                   </div>
 
-                  <p className="desc">{v.description || "لا يوجد وصف"}</p>
+                  <p className="desc">{cleanVideoDescription(v) || "لا يوجد وصف"}</p>
+                  {getVideoPrize(v) && <div className="adminPrizeTag"><Trophy size={18} /> الجائزة: <b>{getVideoPrize(v)}</b></div>}
                   <video controls src={videoUrl(v.video_url)} />
 
                   <div className="adminActionsRow">
@@ -1998,7 +2058,8 @@ function Admin() {
                     <Medal />
                   </div>
 
-                  <p className="desc">{v.description || "لا يوجد وصف"}</p>
+                  <p className="desc">{cleanVideoDescription(v) || "لا يوجد وصف"}</p>
+                  {getVideoPrize(v) && <div className="adminPrizeTag"><Trophy size={18} /> الجائزة: <b>{getVideoPrize(v)}</b></div>}
                   <video controls src={videoUrl(v.video_url)} />
 
                   <div className="adminActionsRow">
@@ -2115,6 +2176,75 @@ function Admin() {
             </div>
           </>
         )}
+
+        {winnerModal.open && (
+          <div className="siteModalOverlay" onClick={() => !winnerModal.saving && setWinnerModal({ open: false, video: null, position: "1", prize: "", saving: false, message: "" })}>
+            <form className="siteModalBox winnerChoiceModal" onSubmit={confirmMonthlyWinner} onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="siteModalClose"
+                onClick={() => !winnerModal.saving && setWinnerModal({ open: false, video: null, position: "1", prize: "", saving: false, message: "" })}
+              >
+                ✕
+              </button>
+
+              <div className="modalIconCircle"><Trophy /></div>
+              <h2>اعتماد فائز المسابقة الشهرية</h2>
+              <p>حدد المركز والجائزة، وبعد الضغط على تم سيظهر الفيديو في منصة الفائزين مع الجائزة.</p>
+
+              {winnerModal.video && (
+                <div className="modalVideoPreview">
+                  <video src={videoUrl(winnerModal.video.video_url)} muted playsInline preload="metadata" />
+                  <div>
+                    <b>{winnerModal.video.title || "فيديو مسابقات"}</b>
+                    <span>{cleanVideoDescription(winnerModal.video) || "بدون وصف"}</span>
+                  </div>
+                </div>
+              )}
+
+              <label className="modalFieldLabel">مركز الفائز</label>
+              <div className="winnerRankChoices">
+                {[1, 2, 3].map((rank) => (
+                  <button
+                    type="button"
+                    key={rank}
+                    className={Number(winnerModal.position) === rank ? "active" : ""}
+                    onClick={() => setWinnerModal((prev) => ({ ...prev, position: String(rank), message: "" }))}
+                  >
+                    <span>#{rank}</span>
+                    {rank === 1 ? "الأول" : rank === 2 ? "الثاني" : "الثالث"}
+                  </button>
+                ))}
+              </div>
+
+              <label className="modalFieldLabel" htmlFor="winnerPrizeInput">الجائزة</label>
+              <input
+                id="winnerPrizeInput"
+                value={winnerModal.prize}
+                onChange={(e) => setWinnerModal((prev) => ({ ...prev, prize: e.target.value, message: "" }))}
+                placeholder="مثال: 10$ / شدات PUBG / لقب الشهر"
+                autoFocus
+              />
+
+              {winnerModal.message && <div className="modalStatusMsg">{winnerModal.message}</div>}
+
+              <div className="modalActions">
+                <button className="mainBtn" type="submit" disabled={winnerModal.saving}>
+                  {winnerModal.saving ? "جاري الحفظ..." : "تم واعتماد الفائز"}
+                </button>
+                <button
+                  className="ghostBtn"
+                  type="button"
+                  disabled={winnerModal.saving}
+                  onClick={() => setWinnerModal({ open: false, video: null, position: "1", prize: "", saving: false, message: "" })}
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
       </section>
     </main>
     </>

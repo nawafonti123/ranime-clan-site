@@ -3887,3 +3887,230 @@ body:has(.adminDashboard) {
     border-radius: 18px;
   }
 }
+
+/* RNM CUSTOM MODAL + WINNER PRIZE */
+.siteModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 0, 0, 0.22), transparent 35%),
+    rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(16px);
+}
+
+.siteModalBox {
+  width: min(620px, 100%);
+  position: relative;
+  border-radius: 34px;
+  padding: 34px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 0, 0, 0.24), transparent 40%),
+    linear-gradient(145deg, rgba(70, 0, 0, 0.92), rgba(4, 4, 4, 0.96));
+  border: 1px solid rgba(255, 0, 0, 0.42);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.62),
+    0 0 70px rgba(255, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: modalPopIn 0.22s ease-out;
+}
+
+@keyframes modalPopIn {
+  from { transform: translateY(18px) scale(0.96); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.siteModalClose {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 0, 0, 0.45);
+  color: #fff;
+  background: rgba(255, 0, 0, 0.14);
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.modalIconCircle {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, #ff1c1c, #620000);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 35px rgba(255, 0, 0, 0.45);
+}
+
+.modalIconCircle svg {
+  width: 36px;
+  height: 36px;
+}
+
+.siteModalBox h2 {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: clamp(28px, 4vw, 42px);
+  color: #fff;
+  font-family: "Reem Kufi", "Cairo", sans-serif;
+  text-shadow: 0 0 25px rgba(255, 0, 0, 0.5);
+}
+
+.siteModalBox > p {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.8;
+  margin: 0 0 20px;
+}
+
+.modalVideoPreview {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  gap: 15px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.36);
+  border: 1px solid rgba(255, 0, 0, 0.22);
+  margin-bottom: 18px;
+}
+
+.modalVideoPreview video {
+  width: 118px;
+  height: 78px;
+  object-fit: cover;
+  border-radius: 16px;
+  background: #000;
+  border: 1px solid rgba(255, 0, 0, 0.25);
+}
+
+.modalVideoPreview b,
+.modalVideoPreview span {
+  display: block;
+}
+
+.modalVideoPreview b {
+  color: #fff;
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+.modalVideoPreview span {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.modalFieldLabel {
+  display: block;
+  margin: 16px 0 8px;
+  color: #fff;
+  font-weight: 900;
+}
+
+.winnerRankChoices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.winnerRankChoices button {
+  min-height: 76px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 0, 0, 0.25);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.34);
+  cursor: pointer;
+  font-weight: 900;
+  transition: 0.22s;
+}
+
+.winnerRankChoices button span {
+  display: block;
+  color: #ff2020;
+  font-size: 24px;
+}
+
+.winnerRankChoices button.active,
+.winnerRankChoices button:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 0, 0, 0.9);
+  background: linear-gradient(135deg, rgba(255, 0, 0, 0.38), rgba(80, 0, 0, 0.7));
+  box-shadow: 0 0 28px rgba(255, 0, 0, 0.28);
+}
+
+.modalStatusMsg {
+  margin-top: 12px;
+  padding: 12px 14px;
+  text-align: center;
+  border-radius: 16px;
+  color: #ffdede;
+  background: rgba(255, 0, 0, 0.11);
+  border: 1px solid rgba(255, 0, 0, 0.26);
+  font-weight: 800;
+}
+
+.modalActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.winnerPrizeBadge,
+.adminPrizeTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(255, 0, 0, 0.28), rgba(0, 0, 0, 0.45));
+  border: 1px solid rgba(255, 0, 0, 0.36);
+  box-shadow: 0 0 22px rgba(255, 0, 0, 0.18);
+  font-weight: 900;
+}
+
+.winnerPrizeBadge svg,
+.adminPrizeTag svg {
+  color: #ff2020;
+  flex: 0 0 auto;
+}
+
+.winnerPrizeBadge span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  margin: 0;
+}
+
+.winnerPrizeBadge b,
+.adminPrizeTag b {
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+
+.adminPrizeTag {
+  margin: 0 0 12px;
+  border-radius: 16px;
+}
+
+@media (max-width: 620px) {
+  .siteModalBox { padding: 26px 18px; }
+  .winnerRankChoices { grid-template-columns: 1fr; }
+  .modalActions { grid-template-columns: 1fr; }
+  .modalVideoPreview { grid-template-columns: 1fr; }
+  .modalVideoPreview video { width: 100%; height: 180px; }
+}
